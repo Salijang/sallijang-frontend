@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 // --- Types ---
-type Page = 'home' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'my' | 'login';
+type Page = 'home' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'my' | 'login' | 'wishlist';
 
 interface Product {
   id: number;
@@ -36,6 +36,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('login');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [orderQuantity, setOrderQuantity] = useState(1);
+  const [userRole, setUserRole] = useState<'USER' | 'SELLER'>('USER');
   
   // Timer state for home
   const [now, setNow] = useState(new Date());
@@ -60,7 +61,7 @@ export default function App() {
         
         {/* Page Routing */}
         <div className={`flex-1 overflow-y-auto ${currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' ? 'pb-20' : ''}`}>
-          {currentPage === 'login' && <LoginPage onNavigate={navigateTo} />}
+          {currentPage === 'login' && <LoginPage onLogin={(role) => { setUserRole(role); navigateTo('home'); }} />}
           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} now={now} />}
           {currentPage === 'detail' && <DetailPage product={selectedProduct} onBack={() => navigateTo('home')} onReserve={(qty) => { setOrderQuantity(qty); navigateTo('payment'); }} now={now} />}
           {currentPage === 'payment' && <PaymentPage product={selectedProduct} quantity={orderQuantity} onBack={() => navigateTo('detail')} onComplete={() => navigateTo('complete')} />}
@@ -69,11 +70,12 @@ export default function App() {
           {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} />}
           {currentPage === 'register' && <RegisterPage onNavigate={navigateTo} />}
           {currentPage === 'my' && <MyPage onNavigate={navigateTo} />}
+          {currentPage === 'wishlist' && <WishlistPage />}
         </div>
 
         {/* Bottom Tab Bar */}
         {currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && (
-          <BottomTabBar currentPage={currentPage} onNavigate={navigateTo} />
+          <BottomTabBar currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} />
         )}
         
       </div>
@@ -85,7 +87,7 @@ export default function App() {
 // Pages
 // ==========================================
 
-function LoginPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
+function LoginPage({ onLogin }: { onLogin: (role: 'USER' | 'SELLER') => void }) {
   return (
     <div className="flex flex-col bg-white min-h-full p-6 justify-center pb-20">
       <div className="flex flex-col items-center mb-10">
@@ -111,14 +113,14 @@ function LoginPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
         />
 
         <button 
-          onClick={() => onNavigate('home')} 
+          onClick={() => onLogin('USER')} 
           className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm mt-3"
         >
           로그인
         </button>
 
         <button 
-          onClick={() => onNavigate('home')} 
+          onClick={() => onLogin('SELLER')} 
           className="w-full bg-black text-[#FFE400] font-extrabold text-lg py-4 rounded-xl hover:bg-gray-800 active:scale-95 transition-transform shadow-sm mt-1"
         >
           판매자 로그인
@@ -127,7 +129,7 @@ function LoginPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
         <div className="flex items-center justify-center gap-4 mt-6 text-sm font-bold text-gray-500">
           <button className="hover:text-black transition-colors">회원가입</button>
           <div className="w-px h-3 bg-gray-300"></div>
-          <button onClick={() => onNavigate('home')} className="hover:text-black transition-colors">비회원으로 시작하기</button>
+          <button onClick={() => onLogin('USER')} className="hover:text-black transition-colors">비회원으로 시작하기</button>
         </div>
       </div>
     </div>
@@ -852,6 +854,34 @@ function MyPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
   );
 }
 
+function WishlistPage() {
+  return (
+    <div className="flex flex-col bg-gray-50 min-h-full">
+      <header className="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-100 shrink-0 shadow-sm">
+        <h1 className="font-bold text-lg text-center w-full">찜한 가게</h1>
+      </header>
+      <div className="flex-1 p-4 flex flex-col gap-3">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-[#FFE400] transition-colors">
+            <div className="w-14 h-14 bg-[#FFFBE6] rounded-full flex items-center justify-center text-3xl border border-yellow-100">🥩</div>
+            <div className="flex-1">
+                <div className="font-bold text-lg">망원 정육점</div>
+                <div className="text-gray-500 text-xs mt-0.5">서울 마포구 망원동 123</div>
+            </div>
+            <button className="text-red-500 text-2xl font-bold p-2 active:scale-95 transition-transform drop-shadow-sm">❤️</button>
+        </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:border-[#FFE400] transition-colors">
+            <div className="w-14 h-14 bg-[#FFFBE6] rounded-full flex items-center justify-center text-3xl border border-yellow-100">🥐</div>
+            <div className="flex-1">
+                <div className="font-bold text-lg">동네 베이커리</div>
+                <div className="text-gray-500 text-xs mt-0.5">서울 마포구 망원동 456</div>
+            </div>
+            <button className="text-red-500 text-2xl font-bold p-2 active:scale-95 transition-transform drop-shadow-sm">❤️</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MenuList({ title, items }: { title: string, items: Array<{label: string, icon: string, value?: string, textClass?: string, onClick?: () => void}> }) {
   return (
     <div className="flex flex-col">
@@ -878,19 +908,28 @@ function MenuList({ title, items }: { title: string, items: Array<{label: string
 // Utils & Shared Components
 // ==========================================
 
-function BottomTabBar({ currentPage, onNavigate }: { currentPage: Page, onNavigate: (page: Page) => void }) {
+function BottomTabBar({ currentPage, onNavigate, userRole }: { currentPage: Page, onNavigate: (page: Page) => void, userRole: 'USER' | 'SELLER' }) {
   return (
     <nav className="absolute bottom-0 w-full max-w-[390px] bg-white border-t border-gray-100 flex items-center justify-around h-16 px-2 drop-shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
       <TabButton icon="🏠" label="홈" isActive={currentPage === 'home'} onClick={() => onNavigate('home')} />
       <TabButton icon="🗺️" label="근처 지도" isActive={false} onClick={() => {}} />
       
       {/* Center Action Button */}
-      <div className="relative -top-5 flex flex-col items-center justify-center">
-        <button onClick={() => onNavigate('register')} className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg border-4 border-white ${currentPage === 'register' ? 'bg-black text-[#FFE400]' : 'bg-[#FFE400] text-black'}`}>
-          ➕
-        </button>
-        <span className={`text-[10px] font-bold mt-1 ${currentPage === 'register' ? 'text-black' : 'text-gray-500'}`}>등록</span>
-      </div>
+      {userRole === 'SELLER' ? (
+        <div className="relative -top-5 flex flex-col items-center justify-center">
+          <button onClick={() => onNavigate('register')} className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg border-4 border-white ${currentPage === 'register' ? 'bg-black text-[#FFE400]' : 'bg-[#FFE400] text-black'}`}>
+            ➕
+          </button>
+          <span className={`text-[10px] font-bold mt-1 ${currentPage === 'register' ? 'text-black' : 'text-gray-500'}`}>등록</span>
+        </div>
+      ) : (
+        <div className="relative -top-5 flex flex-col items-center justify-center">
+          <button onClick={() => onNavigate('wishlist')} className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg border-4 border-white ${currentPage === 'wishlist' ? 'bg-red-50 text-red-500' : 'bg-red-50 text-red-500'}`}>
+            ❤️
+          </button>
+          <span className={`text-[10px] font-bold mt-1 ${currentPage === 'wishlist' ? 'text-black' : 'text-gray-500'}`}>찜</span>
+        </div>
+      )}
 
       <TabButton icon="🧾" label="예약" isActive={currentPage === 'reservations' || currentPage === 'complete'} onClick={() => onNavigate('reservations')} />
       <TabButton icon="👤" label="마이" isActive={currentPage === 'my'} onClick={() => onNavigate('my')} />
