@@ -132,6 +132,12 @@ export function PcGnb({ currentPage, onNavigate, userRole, onSetPcVersion }: { c
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-4">
+           {currentPage !== 'login' && userRole !== 'SELLER' && (
+             <button onClick={() => onNavigate('cart')} className="relative p-2 text-xl hover:scale-110 transition-transform">
+               <span>🛒</span>
+               <div className="absolute top-1 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+             </button>
+           )}
            {currentPage !== 'login' && (
              <button onClick={() => onSetPcVersion(false)} className="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors">
                📱 모바일 전환
