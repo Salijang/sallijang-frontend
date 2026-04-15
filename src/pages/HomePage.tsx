@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { formatCountdown } from '../utils/timeUtils';
-import { DUMMY_PRODUCTS } from '../data';
+import type { Product } from '../types';
 
 /**
  * 앱의 메인 홈 피드 페이지입니다.
@@ -99,8 +99,58 @@ export function HomePage({ onNavigate, onNavigateToCart, now, isPcVersion }: {
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   const markRead = (id: number) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
 
-  const filteredProducts = DUMMY_PRODUCTS.filter(p => {
-    const matchCategory = selectedCategory === "전체" || selectedCategory.includes(p.category);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
+
+  React.useEffect(() => {
+    // 1. 위치 정보 획득 시도 (거부 시 기본 위치인 '망원역' 주변 지정)
+    const fetchWithLocation = (lat?: number, lng?: number) => {
+       const url = (lat !== undefined && lng !== undefined) 
+           ? `http://localhost:8001/api/v1/products/?user_lat=${lat}&user_lng=${lng}`
+           : `http://localhost:8001/api/v1/products/`;
+
+       fetch(url)
+         .then(res => res.json())
+         .then(data => {
+               const mapped: Product[] = data.map((d: any) => ({
+                 id: d.id,
+                 name: d.name,
+                 originalPrice: d.original_price,
+                 discountPrice: d.discount_price,
+                 remaining: d.remaining,
+                 totalQuantity: d.total_quantity,
+                 expiryMinutes: d.expiry_minutes,
+                 category: d.category,
+                 imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+                 weight: d.weight,
+                 description: d.description,
+                 shopName: d.shop_name || "알 수 없는 가게",
+                 distance: d.distance || "500m"
+               }));
+               setProducts(mapped);
+         })
+         .catch(console.error);
+    };
+
+    if (navigator.geolocation) {
+       navigator.geolocation.getCurrentPosition(
+         (pos) => {
+            setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            fetchWithLocation(pos.coords.latitude, pos.coords.longitude);
+         },
+         (err) => {
+            console.warn("Geolocation API Error:", err);
+            // 권한 거부 시 임의의 망원동 좌표로 폴백
+            fetchWithLocation(37.556, 126.903);
+         }
+       );
+    } else {
+       fetchWithLocation();
+    }
+  }, []);
+
+  const filteredProducts = products.filter(p => {
+    const matchCategory = selectedCategory === "전체" || selectedCategory.includes(p.category) || p.category.includes(selectedCategory.replace(/[^가-힣]/g, ''));
     const matchSearch = p.name.includes(searchQuery) || p.shopName.includes(searchQuery);
     return matchCategory && matchSearch;
   });

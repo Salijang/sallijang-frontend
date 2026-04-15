@@ -5,18 +5,80 @@ import { DUMMY_PRODUCTS } from '../data';
 /**
  * 판매자가 등록한 상품을 관리하는 페이지.
  */
-export function SalesPage({ onNavigate }: { onNavigate: (page: Page) => void }) {
-  const [products, setProducts] = useState(DUMMY_PRODUCTS.filter(p => ["망원 정육점", "초록 채소가게", "수산 시장"].includes(p.shopName)));
+export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) => void, storeId?: number | null }) {
+  const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  React.useEffect(() => {
+    if (storeId) {
+      fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`)
+        .then(res => res.json())
+        .then(data => {
+            const mapped: Product[] = data.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              originalPrice: d.original_price,
+              discountPrice: d.discount_price,
+              remaining: d.remaining,
+              totalQuantity: d.total_quantity,
+              expiryMinutes: d.expiry_minutes,
+              category: d.category,
+              imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+              weight: d.weight,
+              description: d.description,
+              shopName: d.shop_name || "내 가게",
+              distance: d.distance || "500m"
+            }));
+            setProducts(mapped);
+        })
+        .catch(console.error);
+    }
+  }, [storeId]);
+
   if (editingProduct) {
-     return <EditProductView product={editingProduct} onSave={() => { alert('수정되었습니다.'); setEditingProduct(null); }} onCancel={() => setEditingProduct(null)} />
+     return <EditProductView product={editingProduct} onSave={async (updates: any) => {
+        try {
+           const res = await fetch(`http://localhost:8001/api/v1/products/${editingProduct.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updates)
+           });
+           if (res.ok) {
+              alert('성공적으로 수정되었습니다.');
+              const data = await res.json();
+              setProducts(prev => prev.map(p => p.id === data.id ? {
+                  ...p,
+                  name: data.name,
+                  originalPrice: data.original_price,
+                  discountPrice: data.discount_price,
+                  remaining: data.remaining,
+                  totalQuantity: data.total_quantity
+              } : p));
+              setEditingProduct(null);
+           } else {
+              alert('수정에 실패했습니다.');
+           }
+        } catch (e) {
+           console.error(e);
+           alert('원활한 연결이 어렵습니다.');
+        }
+     }} onCancel={() => setEditingProduct(null)} />
   }
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("정말 삭제하시겠습니까?")) {
-      setProducts(prev => prev.filter(p => p.id !== id));
-      alert("삭제가 완료되었습니다.");
+      try {
+        const res = await fetch(`http://localhost:8001/api/v1/products/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+           setProducts(prev => prev.filter(p => p.id !== id));
+           alert("삭제가 완료되었습니다.");
+        } else {
+           alert("삭제에 실패했습니다.");
+        }
+      } catch (e) {
+         console.error(e);
+         alert("원활한 연결이 어렵습니다.");
+      }
     }
   };
 
@@ -58,7 +120,7 @@ export function SalesPage({ onNavigate }: { onNavigate: (page: Page) => void }) 
 /**
  * 상품 수정 뷰 컴포넌트
  */
-function EditProductView({ product, onSave, onCancel }: { product: Product, onSave: () => void, onCancel: () => void }) {
+function EditProductView({ product, onSave, onCancel }: { product: Product, onSave: (updates: any) => void, onCancel: () => void }) {
   const [name, setName] = useState(product.name);
   const [price, setPrice] = useState(product.originalPrice);
   const [discountPrice, setDiscountPrice] = useState(product.discountPrice);
@@ -114,7 +176,7 @@ function EditProductView({ product, onSave, onCancel }: { product: Product, onSa
            </div>
          </div>
          
-         <button onClick={onSave} className="w-full mt-2 bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm">
+         <button onClick={() => onSave({ name, original_price: price, discount_price: discountPrice, total_quantity: quantity, remaining })} className="w-full mt-2 bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm">
            변경사항 저장
          </button>
       </div>

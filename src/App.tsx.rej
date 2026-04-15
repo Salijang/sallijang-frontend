@@ -1,5 +1,0 @@
-@@ -2,3 +2,3 @@
- 
- // --- Types ---
--type Page = 'home' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'my' | 'login' | 'wishlist';
-+type Page = 'home' | 'seller_home' | 'sales' | 'map' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'my' | 'login' | 'wishlist';

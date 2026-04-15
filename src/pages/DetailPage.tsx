@@ -5,9 +5,35 @@ import { formatCountdown } from '../utils/timeUtils';
 /**
  * 특정 상품의 상세 정보를 확인하고 픽업 예약 수량을 설정하는 상세 페이지.
  */
-export function DetailPage({ product, onBack, onReserve, now, isPcVersion }: { product: Product, onBack: () => void, onReserve: (qty: number) => void, now: Date, isPcVersion?: boolean }) {
+export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: { productId: number, onBack: () => void, onReserve: (qty: number) => void, now: Date, isPcVersion?: boolean }) {
+  const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [pickupTime, setPickupTime] = useState("20:00");
+
+  React.useEffect(() => {
+    fetch(`http://localhost:8001/api/v1/products/${productId}`)
+      .then(res => res.json())
+      .then(data => {
+        setProduct({
+          id: data.id,
+          name: data.name,
+          originalPrice: data.original_price,
+          discountPrice: data.discount_price,
+          remaining: data.remaining,
+          totalQuantity: data.total_quantity,
+          expiryMinutes: data.expiry_minutes,
+          category: data.category,
+          imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+          weight: data.weight,
+          description: data.description,
+          shopName: data.shop_name || "알 수 없는 가게",
+          distance: data.distance || "500m"
+        });
+      })
+      .catch(console.error);
+  }, [productId]);
+
+  if (!product) return <div className="p-10 flex justify-center text-gray-500 font-bold">로딩 중...</div>;
   const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
   
   const targetTime = new Date(now.getTime() + product.expiryMinutes * 60 * 1000 - (now.getTime() % 1000));

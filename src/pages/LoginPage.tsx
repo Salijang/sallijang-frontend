@@ -5,7 +5,7 @@ import type { Page } from '../types';
  * 로그인 페이지 컴포넌트
  * 일반 유저 / 판매자 역할을 선택하여 로그인합니다.
  */
-export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: { onLogin: (role: 'USER' | 'SELLER') => void, isPcVersion: boolean, onSetPcVersion: (v: boolean) => void, onNavigate: (page: Page) => void }) {
+export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: { onLogin: (role: 'USER' | 'SELLER', userId?: number, storeId?: number) => void, isPcVersion: boolean, onSetPcVersion: (v: boolean) => void, onNavigate: (page: Page) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -45,8 +45,23 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       // 발급받은 JWT 토큰을 로컬 스토리지에 안전하게 보관합니다.
       localStorage.setItem('access_token', data.access_token);
       alert(`${data.role === 'buyer' ? '구매자' : '판매자'} 로그인에 성공했습니다!`);
+
+      let fetchedStoreId = undefined;
+      if (role === 'SELLER') {
+        try {
+          const storeRes = await fetch(`http://localhost:8001/api/v1/stores/?owner_id=${data.user_id}`);
+          if (storeRes.ok) {
+            const stores = await storeRes.json();
+            if (stores && stores.length > 0) {
+              fetchedStoreId = stores[0].id;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch store info", e);
+        }
+      }
       
-      onLogin(role);
+      onLogin(role, data.user_id, fetchedStoreId);
 
     } catch (error) {
       console.error(error);

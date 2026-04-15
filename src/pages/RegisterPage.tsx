@@ -5,7 +5,7 @@ import type { Page } from '../types';
  * 마감 재고(특가 상품)를 새로 등록하는 폼 컴포넌트.
  * 모든 정보를 입력받고, 할인율 스크롤바를 통해 최종 가격을 계산합니다.
  */
-export function RegisterPage({ onNavigate }: { onNavigate?: (page: Page) => void }) {
+export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page) => void, storeId?: number | null }) {
   const [name, setName] = useState("");
   const [weight, setWeight] = useState("");
   const [price, setPrice] = useState<number | "">(15000);
@@ -13,20 +13,50 @@ export function RegisterPage({ onNavigate }: { onNavigate?: (page: Page) => void
   const [discount, setDiscount] = useState(60);
   const [time, setTime] = useState("20:00");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("🥩 정육");
   
   const [attempted, setAttempted] = useState(false);
 
   // 10원 단위를 버리고 100원 단위로 맞춤 (예: 5850원 -> 5800원)
   const discountedPrice = Math.floor(((Number(price) || 0) * (1 - discount / 100)) / 100) * 100;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setAttempted(true);
     if (!name || !weight || !price || !quantity || !time || !description) {
       return;
     }
+    if (!storeId) {
+      alert("가게 정보가 없습니다. 다시 로그인해주세요.");
+      return;
+    }
     if (window.confirm("이대로 등록하시겠습니까?")) {
-      alert("성공적으로 상품이 등록되었습니다!");
-      if (onNavigate) onNavigate('my');
+      try {
+        const res = await fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            original_price: Number(price) || 0,
+            discount_price: discountedPrice,
+            remaining: Number(quantity) || 0,
+            total_quantity: Number(quantity) || 0,
+            expiry_minutes: 120, // 임시 고정값
+            category,
+            image_url: "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+            weight,
+            description
+          })
+        });
+        if (res.ok) {
+          alert("성공적으로 상품이 등록되었습니다!");
+          if (onNavigate) onNavigate('my');
+        } else {
+          alert("상품 등록에 실패했습니다.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("원활한 연결이 어렵습니다.");
+      }
     }
   };
 
@@ -65,7 +95,7 @@ export function RegisterPage({ onNavigate }: { onNavigate?: (page: Page) => void
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">카테고리 <span className="text-red-500">*</span></label>
-            <select className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg font-bold focus:border-[#FFE400] outline-none appearance-none">
+            <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg font-bold focus:border-[#FFE400] outline-none appearance-none">
               <option>🥩 정육</option>
               <option>🥬 채소</option>
               <option>🐟 수산</option>
