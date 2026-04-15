@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Page } from '../types';
 
 /**
@@ -6,6 +6,54 @@ import type { Page } from '../types';
  * 일반 유저 / 판매자 역할을 선택하여 로그인합니다.
  */
 export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: { onLogin: (role: 'USER' | 'SELLER') => void, isPcVersion: boolean, onSetPcVersion: (v: boolean) => void, onNavigate: (page: Page) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async (role: 'USER' | 'SELLER') => {
+    if (!email || !password) {
+      alert("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        // HTTP 401: Unauthorized
+        alert('이메일 또는 비밀번호가 틀렸습니다.');
+        return;
+      }
+
+      const data = await response.json();
+      
+      const expectedRole = role === 'USER' ? 'buyer' : 'seller';
+      if (data.role !== expectedRole) {
+        alert(`해당 계정은 ${data.role === 'buyer' ? '구매자(일반)' : '판매자'} 계정입니다. 올바른 로그인 버튼을 이용해주세요.`);
+        return;
+      }
+
+      // 발급받은 JWT 토큰을 로컬 스토리지에 안전하게 보관합니다.
+      localStorage.setItem('access_token', data.access_token);
+      alert(`${data.role === 'buyer' ? '구매자' : '판매자'} 로그인에 성공했습니다!`);
+      
+      onLogin(role);
+
+    } catch (error) {
+      console.error(error);
+      alert('서버와 통신할 수 없습니다.');
+    }
+  };
+
   if (isPcVersion) {
     return (
       <div className="flex h-[calc(100vh-100px)] w-full bg-white rounded-3xl overflow-hidden shadow-sm mt-8 border border-gray-100">
@@ -19,10 +67,10 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
          <div className="flex-1 flex flex-col justify-center items-center p-10 bg-white relative">
             <div className="max-w-md w-full flex flex-col gap-5 relative z-10">
               <h2 className="text-3xl font-black mb-4 text-center">로그인</h2>
-              <input type="text" placeholder="아이디 또는 이메일" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all" />
-              <input type="password" placeholder="비밀번호" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all" />
-              <button onClick={() => onLogin('USER')} className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 mt-2 active:scale-95 transition-transform shadow-sm">일반 로그인</button>
-              <button onClick={() => onLogin('SELLER')} className="w-full bg-black text-[#FFE400] font-extrabold text-lg py-4 rounded-xl hover:bg-gray-800 active:scale-95 transition-transform shadow-sm">판매자 로그인</button>
+              <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="아이디 또는 이메일" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all" />
+              <button onClick={() => handleLogin('USER')} className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 mt-2 active:scale-95 transition-transform shadow-sm">일반 로그인</button>
+              <button onClick={() => handleLogin('SELLER')} className="w-full bg-black text-[#FFE400] font-extrabold text-lg py-4 rounded-xl hover:bg-gray-800 active:scale-95 transition-transform shadow-sm">판매자 로그인</button>
               <div className="flex justify-center items-center mt-6 gap-4 font-bold text-sm text-gray-500">
                 <button onClick={() => onNavigate('signup')} className="hover:text-black transition-colors">회원가입</button>
                 <div className="w-px h-3 bg-gray-300"></div>
@@ -48,25 +96,27 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
 
       <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
         <input 
-          type="text" 
+          type="text"
+          value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="아이디 또는 이메일" 
           className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
         />
         <input 
           type="password" 
+          value={password} onChange={(e) => setPassword(e.target.value)}
           placeholder="비밀번호" 
           className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
         />
 
         <button 
-          onClick={() => onLogin('USER')} 
+          onClick={() => handleLogin('USER')} 
           className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm mt-3"
         >
           로그인
         </button>
 
         <button 
-          onClick={() => onLogin('SELLER')} 
+          onClick={() => handleLogin('SELLER')} 
           className="w-full bg-black text-[#FFE400] font-extrabold text-lg py-4 rounded-xl hover:bg-gray-800 active:scale-95 transition-transform shadow-sm mt-1"
         >
           판매자 로그인
