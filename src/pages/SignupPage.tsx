@@ -13,7 +13,7 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
   const [name, setName] = useState('');
   const [shopName, setShopName] = useState('');
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!email || !password || !confirmPassword || !name) {
       alert("모든 필드를 입력해주세요.");
       return;
@@ -27,8 +27,61 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
       return;
     }
 
-    alert(`${role === 'USER' ? '구매자' : '판매자'} 회원가입이 완료되었습니다!`);
-    onNavigate('login');
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          full_name: name,
+          password: password,
+          role: role === 'USER' ? 'buyer' : 'seller'
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+
+        // 1. 백엔드에서 우리가 직접 발생시킨 에러 (문자열 형태)
+        if (typeof err.detail === 'string') {
+          if (err.detail === "Email already registered") {
+            alert("이미 가입된 이메일입니다. 다른 이메일을 사용해주세요.");
+          } else {
+            alert(`회원가입 실패: ${err.detail}`);
+          }
+          return;
+        }
+
+        // 2. FastAPI 422 데이터 검증 에러 (배열 형태)
+        if (Array.isArray(err.detail) && err.detail.length > 0) {
+          const firstError = err.detail[0];
+          // loc 배열의 마지막 요소가 에러가 난 필드 이름입니다. (예: ["body", "email"])
+          const errorField = firstError.loc[firstError.loc.length - 1];
+
+          if (errorField === 'email') {
+            alert("올바르지 않은 이메일 형식입니다. (예: example@mail.com)");
+          } else if (errorField === 'password') {
+            alert("비밀번호는 문자, 숫자, 특수문자를 모두 포함하여 8~20자 사이로 입력해주세요.");
+          } else {
+            alert(`입력값을 다시 확인해주세요. (${errorField})`);
+          }
+          return;
+        }
+
+        alert("회원가입 중 오류가 발생했습니다.");
+        return;
+      }
+
+      await response.json();
+      alert(`${role === 'USER' ? '구매자' : '판매자'} 회원가입이 완료되었습니다!`);
+      onNavigate('login');
+
+    } catch (error) {
+      console.error(error);
+      alert('서버와 통신할 수 없습니다.');
+    }
   };
 
   return (
@@ -42,13 +95,13 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-gray-700">가입 유형</label>
           <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button 
+            <button
               onClick={() => setRole('USER')}
               className={`flex-1 py-3 rounded-lg font-bold transition-all ${role === 'USER' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
             >
               구매자
             </button>
-            <button 
+            <button
               onClick={() => setRole('SELLER')}
               className={`flex-1 py-3 rounded-lg font-bold transition-all ${role === 'SELLER' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
             >
@@ -60,22 +113,22 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-bold text-gray-700">이메일</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@mail.com" 
+              placeholder="example@mail.com"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-bold text-gray-700">이름</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="이름을 입력하세요" 
+              placeholder="이름을 입력하세요"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
             />
           </div>
@@ -83,11 +136,11 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
           {role === 'SELLER' && (
             <div className="flex flex-col gap-1">
               <label className="text-sm font-bold text-gray-700">가게 이름</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={shopName}
                 onChange={(e) => setShopName(e.target.value)}
-                placeholder="가게 이름을 입력하세요" 
+                placeholder="가게 이름을 입력하세요"
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
               />
             </div>
@@ -95,28 +148,28 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-bold text-gray-700">비밀번호</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호 입력" 
+              placeholder="비밀번호 (문자, 숫자, 특수문자 포함 8~20자)"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-bold text-gray-700">비밀번호 확인</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="비밀번호 재입력" 
+              placeholder="비밀번호 재입력"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
             />
           </div>
         </div>
 
-        <button 
+        <button
           onClick={handleSignup}
           className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm mt-4 mb-10"
         >
