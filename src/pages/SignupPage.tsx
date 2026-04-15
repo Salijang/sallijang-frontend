@@ -12,16 +12,8 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [shopName, setShopName] = useState('');
-  const [region, setRegion] = useState('망원동');
-
-  const getRegionCoords = (reg: string) => {
-    switch (reg) {
-      case '망원동': return { lat: 37.556, lng: 126.903 };
-      case '합정동': return { lat: 37.549, lng: 126.914 };
-      case '서교동': return { lat: 37.553, lng: 126.921 };
-      default: return { lat: 37.556, lng: 126.903 };
-    }
-  };
+  const [shopAddress, setShopAddress] = useState('');
+  const [shopAddressDetail, setShopAddressDetail] = useState('');
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword || !name) {
@@ -34,6 +26,10 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
     }
     if (role === 'SELLER' && !shopName) {
       alert("가게 이름을 입력해주세요.");
+      return;
+    }
+    if (role === 'SELLER' && !shopAddress) {
+      alert("가게 주소를 입력해주세요. (\uc608: 서울 마포구 망원동 123-4)");
       return;
     }
 
@@ -88,14 +84,22 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
 
       if (role === 'SELLER') {
         try {
-          const coords = getRegionCoords(region);
-          await fetch(`http://localhost:8001/api/v1/stores/?owner_id=${userData.id}`, {
+          const storeRes = await fetch(`http://localhost:8001/api/v1/stores/?owner_id=${userData.id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: shopName, distance: "거리 측정 불가", latitude: coords.lat, longitude: coords.lng })
+            body: JSON.stringify({ 
+              name: shopName, 
+              address: shopAddress,          // 다음 주소 검색으로 받은 기반 주소 (지오코딩용)
+              address_detail: shopAddressDetail || undefined  // 상세주소 (선택)
+            })
           });
+          if (!storeRes.ok) {
+            const errBody = await storeRes.text();
+            console.error("Store creation HTTP error:", storeRes.status, errBody);
+          }
         } catch (e) {
-          console.error("Store creation failed", e);
+          // 스토어 생성 실패 시에도 회원가입 자체는 성공 처리
+          console.error("Store creation failed:", e);
         }
       }
 
@@ -160,18 +164,6 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
           {role === 'SELLER' && (
             <>
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-bold text-gray-700">동네 선택 (임시 주소)</label>
-                <select 
-                  value={region} 
-                  onChange={(e) => setRegion(e.target.value)}
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white outline-none transition-all"
-                >
-                  <option>망원동</option>
-                  <option>합정동</option>
-                  <option>서교동</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
                 <label className="text-sm font-bold text-gray-700">가게 이름</label>
                 <input
                   type="text"
@@ -180,6 +172,45 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
                   placeholder="가게 이름을 입력하세요"
                   className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
                 />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-700">가게 주소</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={shopAddress}
+                    readOnly
+                    placeholder="주소 검색 버튼을 눌러 검색하세요"
+                    className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none cursor-default"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      new (window as any).daum.Postcode({
+                        oncomplete: (data: any) => {
+                          // 도로명 주소 우선, 없으면 지번주소 사용
+                          const fullAddress = data.roadAddress || data.jibunAddress;
+                          setShopAddress(fullAddress);
+                        }
+                      }).open();
+                    }}
+                    className="shrink-0 px-4 py-3 bg-[#FFE400] text-black font-extrabold rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform text-sm"
+                  >
+                    검색
+                  </button>
+                </div>
+                {shopAddress && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <input
+                      type="text"
+                      placeholder="상세 주소 입력 (동동, 안, 스타연트 등) - 선택사항"
+                      value={shopAddressDetail}
+                      onChange={(e) => setShopAddressDetail(e.target.value)}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] focus:bg-white focus:ring-4 focus:ring-yellow-100 outline-none transition-all"
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 mt-1 px-1">파란 검색 버튼을 눌러 주소를 검색하는게 정확합니다.</p>
               </div>
             </>
           )}
