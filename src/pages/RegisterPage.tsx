@@ -26,7 +26,7 @@ export function RegisterPage({ onNavigate }: { onNavigate?: (page: Page) => void
     }
     if (window.confirm("이대로 등록하시겠습니까?")) {
       alert("성공적으로 상품이 등록되었습니다!");
-      if (onNavigate) onNavigate('home');
+      if (onNavigate) onNavigate('my');
     }
   };
 
@@ -37,8 +37,9 @@ export function RegisterPage({ onNavigate }: { onNavigate?: (page: Page) => void
 
   return (
     <div className="flex flex-col bg-white">
-      <header className="bg-white p-4 border-b border-gray-100 sticky top-0 z-10 flex justify-center shadow-sm">
-        <h1 className="text-lg font-bold">마감 재고 등록</h1>
+      <header className="bg-white p-4 border-b border-gray-100 sticky top-0 z-10 flex items-center shadow-sm">
+        <button onClick={() => onNavigate?.('my')} className="p-1 mr-2 text-xl absolute left-4">←</button>
+        <h1 className="text-lg font-bold mx-auto">마감 재고 등록</h1>
       </header>
 
       <div className="p-4 flex flex-col gap-6">

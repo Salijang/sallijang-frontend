@@ -5,6 +5,7 @@ import { BottomTabBar, PcGnb } from './components/SharedComponents';
 
 // 개별 페이지 Import
 import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
 import { HomePage } from './pages/HomePage';
 import { DetailPage } from './pages/DetailPage';
 import { PaymentPage } from './pages/PaymentPage';
@@ -18,6 +19,9 @@ import { SalesPage } from './pages/SalesPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { SellerHomePage } from './pages/SellerHomePage';
 import { CartPage } from './pages/CartPage';
+import { CustomerCenterPage } from './pages/CustomerCenterPage';
+import { NotificationSettingsPage } from './pages/NotificationSettingsPage';
+import { TermsPolicyPage } from './pages/TermsPolicyPage';
 /**
  * 앱의 메인 라우터이자 레이아웃을 담당하는 App 컴포넌트입니다.
  * 상태 관리를 통해 각 페이지를 불러옵니다.
@@ -60,16 +64,17 @@ export default function App() {
   if (isPcVersion) {
     return (
       <div className="bg-gray-50 min-h-screen text-gray-900 font-sans pb-20 relative">
-        {currentPage !== 'login' && <PcGnb currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} onSetPcVersion={setIsPcVersion} />}
-        <main className={`max-w-[1200px] w-full mx-auto ${currentPage !== 'login' ? 'pt-24' : ''}`}>
-           {currentPage === 'login' && <LoginPage onLogin={(role) => { setUserRole(role); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} />}
+        {currentPage !== 'login' && currentPage !== 'signup' && <PcGnb currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} onSetPcVersion={setIsPcVersion} />}
+        <main className={`max-w-[1200px] w-full mx-auto ${currentPage !== 'login' && currentPage !== 'signup' ? 'pt-24' : ''}`}>
+           {currentPage === 'login' && <LoginPage onLogin={(role) => { setUserRole(role); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
+           {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
            {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} now={now} isPcVersion={isPcVersion} />}
            {currentPage === 'detail' && <DetailPage product={selectedProduct} onBack={() => navigateTo('home')} onReserve={(qty) => { setOrderQuantity(qty); navigateTo('payment'); }} now={now} isPcVersion={isPcVersion} />}
            
            {/* Wrap mobile-focused pages in a PC card */}
-           {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart'].includes(currentPage) && (
+           {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy'].includes(currentPage) && (
              <div className="max-w-3xl mx-auto bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 min-h-[600px] mt-8">
-               {currentPage === 'seller_home' && <SellerHomePage />}
+               {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} />}
                {currentPage === 'payment' && (
                  cartOrderItems.length > 0
                    ? <PaymentPage cartItems={cartOrderItems} cartShopName={cartOrderShopName} onBack={() => { setCartOrderItems([]); navigateTo('cart'); }} onComplete={() => navigateTo('complete')} />
@@ -84,6 +89,9 @@ export default function App() {
                {currentPage === 'sales' && <SalesPage onNavigate={navigateTo} />}
                {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} />}
                {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} />}
+               {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
+               {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
+               {currentPage === 'terms_policy' && <TermsPolicyPage onNavigate={navigateTo} />}
              </div>
            )}
            {currentPage === 'map' && <div className="p-4 pt-20 text-center font-bold">PC 지도 페이지 (구현 예정)</div>}
@@ -98,10 +106,11 @@ export default function App() {
       <div className="w-full max-w-[390px] h-screen bg-white relative overflow-y-auto flex flex-col shadow-2xl transition-all duration-300">
         
         {/* Page Routing */}
-        <div className={`flex-1 overflow-y-auto ${currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'cart' ? 'pb-20' : ''}`}>
-          {currentPage === 'login' && <LoginPage onLogin={(role) => { setUserRole(role); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} />}
+        <div className={`flex-1 overflow-y-auto ${currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'cart' ? 'pb-20' : ''}`}>
+          {currentPage === 'login' && <LoginPage onLogin={(role) => { setUserRole(role); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
+          {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} now={now} isPcVersion={isPcVersion} />}
-          {currentPage === 'seller_home' && <SellerHomePage />}
+          {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} />}
           {currentPage === 'detail' && <DetailPage product={selectedProduct} onBack={() => navigateTo('home')} onReserve={(qty) => { setOrderQuantity(qty); navigateTo('payment'); }} now={now} isPcVersion={isPcVersion} />}
           {currentPage === 'payment' && (
             cartOrderItems.length > 0
@@ -117,11 +126,14 @@ export default function App() {
           {currentPage === 'sales' && <SalesPage onNavigate={navigateTo} />}
           {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} />}
           {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} />}
+          {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
+          {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
+          {currentPage === 'terms_policy' && <TermsPolicyPage onNavigate={navigateTo} />}
           {currentPage === 'map' && <div className="p-4 pt-20 text-center font-bold">지도 페이지</div>}
         </div>
 
         {/* Bottom Tab Bar */}
-        {currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'cart' && (
+        {currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'cart' && currentPage !== 'customer_center' && currentPage !== 'notification_settings' && currentPage !== 'terms_policy' && (
           <BottomTabBar currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} isPcVersion={isPcVersion} />
         )}
         

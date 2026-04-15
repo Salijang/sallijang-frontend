@@ -5,7 +5,7 @@ import type { Page } from '../types';
  * 로그인 페이지 컴포넌트
  * 일반 유저 / 판매자 역할을 선택하여 로그인합니다.
  */
-export function LoginPage({ onLogin, isPcVersion, onSetPcVersion }: { onLogin: (role: 'USER' | 'SELLER') => void, isPcVersion: boolean, onSetPcVersion: (v: boolean) => void }) {
+export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: { onLogin: (role: 'USER' | 'SELLER') => void, isPcVersion: boolean, onSetPcVersion: (v: boolean) => void, onNavigate: (page: Page) => void }) {
   if (isPcVersion) {
     return (
       <div className="flex h-[calc(100vh-100px)] w-full bg-white rounded-3xl overflow-hidden shadow-sm mt-8 border border-gray-100">
@@ -24,7 +24,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion }: { onLogin: (
               <button onClick={() => onLogin('USER')} className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 mt-2 active:scale-95 transition-transform shadow-sm">일반 로그인</button>
               <button onClick={() => onLogin('SELLER')} className="w-full bg-black text-[#FFE400] font-extrabold text-lg py-4 rounded-xl hover:bg-gray-800 active:scale-95 transition-transform shadow-sm">판매자 로그인</button>
               <div className="flex justify-center items-center mt-6 gap-4 font-bold text-sm text-gray-500">
-                <button className="hover:text-black transition-colors">회원가입</button>
+                <button onClick={() => onNavigate('signup')} className="hover:text-black transition-colors">회원가입</button>
                 <div className="w-px h-3 bg-gray-300"></div>
                 <button onClick={() => onSetPcVersion(false)} className="hover:text-black transition-colors text-blue-500 font-black drop-shadow-sm flex items-center gap-1">📱 모바일 버전으로 보기</button>
               </div>
@@ -73,7 +73,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion }: { onLogin: (
         </button>
 
         <div className="flex items-center justify-center gap-4 mt-6 text-sm font-bold text-gray-500">
-          <button className="hover:text-black transition-colors">회원가입</button>
+          <button onClick={() => onNavigate('signup')} className="hover:text-black transition-colors">회원가입</button>
           <div className="w-px h-3 bg-gray-300"></div>
           <button onClick={() => onSetPcVersion(true)} className="hover:text-black transition-colors text-[#FFE400] font-black drop-shadow-sm flex items-center gap-1">💻 PC 버전으로 보기</button>
         </div>

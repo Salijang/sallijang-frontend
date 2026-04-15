@@ -54,15 +54,15 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
 
           <div className="bg-white pt-2 border-y border-gray-100 shadow-sm">
             <MenuList title="고객센터" items={[
-              { label: '사장님 공지사항', icon: '📢' },
-              { label: '자주 묻는 질문', icon: '❓' },
+              { label: '사장님 공지사항', icon: '📢', onClick: () => onNavigate('customer_center') },
+              { label: '자주 묻는 질문', icon: '❓', onClick: () => onNavigate('customer_center') },
               { label: '사장님 만족도 조사', icon: '📋' },
             ]} />
           </div>
 
           <div className="bg-white pt-2 pb-4 border-y border-gray-100 shadow-sm">
             <MenuList title="설정" items={[
-              { label: '알림 설정', icon: '🔔' },
+              { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
               { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
             ]} />
           </div>
@@ -118,17 +118,17 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
         {/* Customer Center */}
         <div className="bg-white pt-2 border-y border-gray-100 shadow-sm">
           <MenuList title="고객센터" items={[
-            { label: '공지사항', icon: '📢' },
-            { label: '자주 묻는 질문', icon: '❓' },
-            { label: '1:1 문의', icon: '💬' },
+            { label: '공지사항', icon: '📢', onClick: () => onNavigate('customer_center') },
+            { label: '자주 묻는 질문', icon: '❓', onClick: () => onNavigate('customer_center') },
+            { label: '1:1 문의', icon: '💬', onClick: () => onNavigate('customer_center') },
           ]} />
         </div>
 
         {/* Settings */}
         <div className="bg-white pt-2 pb-4 border-y border-gray-100 shadow-sm">
           <MenuList title="설정" items={[
-            { label: '알림 설정', icon: '🔔' },
-            { label: '약관 및 정책', icon: '📄' },
+            { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
+            { label: '약관 및 정책', icon: '📄', onClick: () => onNavigate('terms_policy') },
             { label: '현재 버전', icon: 'ℹ️', value: '1.0.0' },
             { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
           ]} />

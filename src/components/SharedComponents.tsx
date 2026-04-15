@@ -27,7 +27,7 @@ export function BottomTabBar({ currentPage, onNavigate, userRole, isPcVersion }:
       )}
 
       <TabButton icon="🧾" label="예약" isActive={currentPage === 'reservations' || currentPage === 'complete'} onClick={() => onNavigate('reservations')} />
-      <TabButton icon="👤" label="마이" isActive={currentPage === 'my'} onClick={() => onNavigate('my')} />
+      <TabButton icon="👤" label="마이" isActive={currentPage === 'my' || currentPage === 'customer_center'} onClick={() => onNavigate('my')} />
     </nav>
   )
 }
@@ -127,7 +127,7 @@ export function PcGnb({ currentPage, onNavigate, userRole, onSetPcVersion }: { c
           )}
 
           <button onClick={() => onNavigate('reservations')} className={`h-full border-b-4 ${currentPage === 'reservations' ? 'border-[#FFE400] text-black' : 'border-transparent hover:text-black hover:border-gray-200'} transition-all`}>예약</button>
-          <button onClick={() => onNavigate('my')} className={`h-full border-b-4 ${currentPage === 'my' ? 'border-[#FFE400] text-black' : 'border-transparent hover:text-black hover:border-gray-200'} transition-all`}>마이</button>
+          <button onClick={() => onNavigate('my')} className={`h-full border-b-4 ${currentPage === 'my' || currentPage === 'customer_center' ? 'border-[#FFE400] text-black' : 'border-transparent hover:text-black hover:border-gray-200'} transition-all`}>마이</button>
         </nav>
 
         {/* Right Header Actions */}

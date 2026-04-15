@@ -3,7 +3,7 @@
  * Page: 앱의 라우팅 가능한 페이지 목록
  * Product: 상품 정보 인터페이스
  */
-export type Page = 'home' | 'seller_home' | 'sales' | 'map' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'my' | 'login' | 'wishlist' | 'reviews' | 'cart';
+export type Page = 'home' | 'seller_home' | 'sales' | 'map' | 'detail' | 'payment' | 'complete' | 'reservations' | 'history' | 'register' | 'signup' | 'my' | 'login' | 'wishlist' | 'reviews' | 'cart' | 'customer_center' | 'notification_settings' | 'terms_policy';
 
 /** 장바구니에서 결제 페이지로 넘길 때 사용하는 주문 아이템 타입 */
 export interface CartOrderItem {
