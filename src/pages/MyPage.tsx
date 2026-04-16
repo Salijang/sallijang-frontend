@@ -1,13 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Page } from '../types';
 import { MenuList } from '../components/SharedComponents';
+
+interface StoreInfo {
+  name: string;
+  address: string | null;
+}
 
 /**
  * 마이페이지 컴포넌트.
  * 판매자 혹은 유저의 프로필 및 각종 메뉴를 표시합니다.
+ * userName, userId, storeId를 App.tsx에서 전달받아 실제 데이터를 표시합니다.
  */
-export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => void, userRole?: 'USER' | 'SELLER' }) {
+export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
+  onNavigate: (page: Page) => void;
+  userRole?: 'USER' | 'SELLER';
+  userId?: number | null;
+  storeId?: number | null;
+  userName?: string;
+}) {
+  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
+
+  useEffect(() => {
+    if (userRole !== 'SELLER' || !userId) return;
+    fetch(`http://localhost:8001/api/v1/stores/?owner_id=${userId}`)
+      .then(res => res.json())
+      .then(stores => {
+        if (stores && stores.length > 0) {
+          setStoreInfo({ name: stores[0].name, address: stores[0].address ?? null });
+        }
+      })
+      .catch(console.error);
+  }, [userRole, userId]);
+
+  const displayName = userName || '살리장 회원';
+
   if (userRole === 'SELLER') {
+    const storeName = storeInfo?.name || '내 가게';
+    const storeAddress = storeInfo?.address || null;
+
     return (
       <div className="flex flex-col bg-gray-50 min-h-full">
         <header className="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-100 shrink-0">
@@ -20,11 +51,14 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-[#FFE400] rounded-full flex items-center justify-center text-4xl shadow-sm">👨‍🍳</div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-xl">김살리 사장님</span>
-                <span className="text-gray-500 text-sm mt-1">망원 정육점</span>
+                <span className="font-extrabold text-xl">{displayName} 사장님</span>
+                <span className="text-gray-700 text-sm font-bold mt-0.5">{storeName}</span>
+                {storeAddress && (
+                  <span className="text-gray-400 text-xs mt-0.5">{storeAddress}</span>
+                )}
               </div>
             </div>
-            
+
             <div className="flex justify-around mt-6 pt-5 border-t border-gray-100">
               <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
                 <span className="text-2xl">📦</span>
@@ -83,11 +117,11 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-4xl">😎</div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-xl">마포구 식객님</span>
+              <span className="font-extrabold text-xl">{displayName}</span>
               <span className="text-gray-500 text-sm mt-1">오늘도 지구를 구하는 중! 🌍</span>
             </div>
           </div>
-          
+
           <div className="flex justify-around mt-6 pt-5 border-t border-gray-100">
             <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
               <span className="text-2xl">🎟️</span>
@@ -107,7 +141,6 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
           </div>
         </div>
 
-        {/* My Activity */}
         <div className="bg-white pt-2 border-y border-gray-100 shadow-sm">
           <MenuList title="나의 쇼핑" items={[
             { label: '주문 내역', icon: '🧾', onClick: () => onNavigate('history') },
@@ -115,7 +148,6 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
           ]} />
         </div>
 
-        {/* Customer Center */}
         <div className="bg-white pt-2 border-y border-gray-100 shadow-sm">
           <MenuList title="고객센터" items={[
             { label: '공지사항', icon: '📢', onClick: () => onNavigate('customer_center') },
@@ -124,7 +156,6 @@ export function MyPage({ onNavigate, userRole }: { onNavigate: (page: Page) => v
           ]} />
         </div>
 
-        {/* Settings */}
         <div className="bg-white pt-2 pb-4 border-y border-gray-100 shadow-sm">
           <MenuList title="설정" items={[
             { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },

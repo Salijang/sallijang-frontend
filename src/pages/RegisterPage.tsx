@@ -88,8 +88,8 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
               {attempted && !name && <p className="text-red-500 text-xs font-bold mt-1">상품명을 입력해주세요.</p>}
             </div>
             <div className="col-span-1">
-              <label className="block text-sm font-bold text-gray-700 mb-1 whitespace-nowrap">중량 / 갯수 <span className="text-red-500">*</span></label>
-              <input type="text" value={weight} onChange={e => setWeight(e.target.value)} placeholder="300g, 5개" className={`w-full p-3 rounded-lg font-bold outline-none text-center px-1 text-sm border transition-colors ${getBorderClass(weight)}`} />
+              <label className="block text-sm font-bold text-gray-700 mb-1 whitespace-nowrap">중량 <span className="text-red-500">*</span></label>
+              <input type="text" value={weight} onChange={e => setWeight(e.target.value)} placeholder="300g" className={`w-full p-3 rounded-lg font-bold outline-none text-center px-1 text-sm border transition-colors ${getBorderClass(weight)}`} />
             </div>
           </div>
 

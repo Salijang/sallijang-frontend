@@ -5,7 +5,7 @@ import { formatCountdown } from '../utils/timeUtils';
 /**
  * 특정 상품의 상세 정보를 확인하고 픽업 예약 수량을 설정하는 상세 페이지.
  */
-export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: { productId: number, onBack: () => void, onReserve: (qty: number) => void, now: Date, isPcVersion?: boolean }) {
+export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isPcVersion }: { productId: number, onBack: () => void, onReserve: (qty: number) => void, onAddToCart: (product: Product, quantity: number) => void, now: Date, isPcVersion?: boolean }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [pickupTime, setPickupTime] = useState("20:00");
@@ -27,7 +27,9 @@ export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: {
           weight: data.weight,
           description: data.description,
           shopName: data.shop_name || "알 수 없는 가게",
-          distance: data.distance || "500m"
+          distance: data.distance,
+          storeId: data.store_id,
+          storeAddress: data.store_address,
         });
       })
       .catch(console.error);
@@ -96,7 +98,7 @@ export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: {
                   {product.shopName}
                   {product.rating && <span className="text-base font-bold text-yellow-500 ml-1">⭐ {product.rating}</span>}
                 </div>
-                <div className="text-gray-500 text-base mt-2">서울 마포구 망원동 123 ({product.distance})</div>
+                <div className="text-gray-500 text-base mt-2">{product.storeAddress || '주소 정보 없음'}{product.distance ? ` (${product.distance})` : ''}</div>
                 <div className="text-blue-600 font-bold text-base mt-1">오늘 오후 6시 ~ 8시 픽업 가능</div>
               </div>
               <button className="px-6 py-3 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors">
@@ -127,9 +129,20 @@ export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: {
               </div>
             </div>
 
-            <button onClick={() => onReserve(quantity)} className="w-full bg-[#FFE400] text-black font-extrabold text-xl py-5 rounded-2xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-md mt-auto">
-              지금 픽업 예약하기 — {(product.discountPrice * quantity).toLocaleString()}원
-            </button>
+            <div className="flex gap-3 mt-auto">
+              <button
+                onClick={() => onAddToCart(product, quantity)}
+                className="flex-1 bg-white border-2 border-[#FFE400] text-black font-extrabold text-lg py-5 rounded-2xl hover:bg-yellow-50 active:scale-95 transition-transform shadow-sm"
+              >
+                🛒 장바구니에 담기
+              </button>
+              <button
+                onClick={() => onReserve(quantity)}
+                className="flex-1 bg-[#FFE400] text-black font-extrabold text-lg py-5 rounded-2xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-md"
+              >
+                바로 픽업 예약하기
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -190,7 +203,7 @@ export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: {
               {product.shopName}
               {product.rating && <span className="text-sm font-bold text-yellow-500 ml-1">⭐ {product.rating}</span>}
             </div>
-            <div className="text-gray-500 text-sm mt-1">서울 마포구 망원동 123 ({product.distance})</div>
+            <div className="text-gray-500 text-sm mt-1">{product.storeAddress || '주소 정보 없음'}{product.distance ? ` (${product.distance})` : ''}</div>
             <div className="text-blue-600 font-bold text-sm mt-1">오늘 오후 6시 ~ 8시 픽업 가능</div>
           </div>
           <div className="w-full h-24 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 font-bold">
@@ -222,10 +235,19 @@ export function DetailPage({ productId, onBack, onReserve, now, isPcVersion }: {
 
       </div>
 
-      {/* 모바일 하단 플로팅 결제버튼 */}
-      <div className="sticky bottom-0 w-full bg-white p-4 pb-6 border-t border-gray-100 drop-shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
-        <button onClick={() => onReserve(quantity)} className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm">
-          지금 픽업 예약하기 — {(product.discountPrice * quantity).toLocaleString()}원
+      {/* 모바일 하단 플로팅 버튼 영역 */}
+      <div className="sticky bottom-0 w-full bg-white p-4 pb-6 border-t border-gray-100 drop-shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20 flex gap-3">
+        <button
+          onClick={() => onAddToCart(product, quantity)}
+          className="flex-1 bg-white border-2 border-[#FFE400] text-black font-extrabold text-base py-4 rounded-xl hover:bg-yellow-50 active:scale-95 transition-transform"
+        >
+          🛒 담기
+        </button>
+        <button
+          onClick={() => onReserve(quantity)}
+          className="flex-[2] bg-[#FFE400] text-black font-extrabold text-base py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm"
+        >
+          바로 픽업 예약하기 — {(product.discountPrice * quantity).toLocaleString()}원
         </button>
       </div>
     </div>

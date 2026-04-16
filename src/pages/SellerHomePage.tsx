@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * 판매자 전용 홈 데시보드.
  * 매출액, 요약 등 판매자의 전반적 활동을 요약합니다.
  */
-export function SellerHomePage({ isPcVersion }: { isPcVersion?: boolean }) {
+export function SellerHomePage({ isPcVersion, userName }: { isPcVersion?: boolean; userName?: string }) {
   const [pauseBusiness, setPauseBusiness] = useState(false);
   const [noticeExpanded, setNoticeExpanded] = useState(false);
 
@@ -35,7 +35,7 @@ export function SellerHomePage({ isPcVersion }: { isPcVersion?: boolean }) {
             <span>·</span>
             <span>☀️ 20.2°</span>
           </div>
-          <h2 className="text-[21px] font-black text-gray-900 tracking-tight leading-snug">김살리 사장님을 언제나 응원해요!</h2>
+          <h2 className="text-[21px] font-black text-gray-900 tracking-tight leading-snug">{userName || '사장'}님을 언제나 응원해요!</h2>
         </div>
 
         {/* ... (Existing sales stats and pause toggle remain unchanged) ... */}

@@ -1,45 +1,98 @@
 import React, { useState } from 'react';
-import type { Product, CartOrderItem } from '../types';
-import { DUMMY_PRODUCTS } from '../data';
+import type { Product, CartEntry, OrderResult } from '../types';
 
 /**
  * 결제 진행 페이지
  * - 단일 상품 예약(detail → payment): product + quantity props 사용
- * - 장바구니 주문(cart → payment): cartItems + shopName props 사용
- * 두 경우 모두 토스페이 / 현장 결제 선택 후 완료 처리합니다.
+ * - 장바구니 주문(cart → payment): cartEntries + shopName props 사용
+ * 두 경우 모두 토스페이 / 현장 결제 선택 후 Order Service에 주문을 생성합니다.
  */
 interface PaymentPageProps {
   // 단일 상품 예약 경로
   product?: Product;
   quantity?: number;
   // 장바구니 주문 경로
-  cartItems?: CartOrderItem[];
+  cartEntries?: CartEntry[];
   cartShopName?: string;
   // 공통
+  buyerId?: number | null;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: (result: OrderResult) => void;
 }
 
-export function PaymentPage({ product, quantity = 1, cartItems, cartShopName, onBack, onComplete }: PaymentPageProps) {
+export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, buyerId, onBack, onComplete }: PaymentPageProps) {
   const [method, setMethod] = useState<'toss' | 'onsite'>('toss');
+  const [isLoading, setIsLoading] = useState(false);
 
   // ── 장바구니 주문 모드 판별 ──────────────────────────
-  const isCartMode = !!cartItems && cartItems.length > 0;
+  const isCartMode = !!cartEntries && cartEntries.length > 0;
 
-  // 장바구니 상품 목록 resolve
-  const resolvedCartItems = isCartMode
-    ? cartItems!.map(ci => ({
-        product: DUMMY_PRODUCTS.find(p => p.id === ci.productId)!,
-        quantity: ci.quantity,
-      })).filter(ci => !!ci.product)
-    : [];
+  // 장바구니 상품 목록 (CartEntry에 이미 product 데이터 포함)
+  const resolvedCartItems: CartEntry[] = isCartMode ? cartEntries! : [];
 
   const totalPrice = isCartMode
-    ? resolvedCartItems.reduce((sum, ci) => sum + ci.product.discountPrice * ci.quantity, 0)
+    ? resolvedCartItems.reduce((sum, e) => sum + e.product.discountPrice * e.quantity, 0)
     : (product?.discountPrice ?? 0) * quantity;
 
-  const finalPrice = totalPrice; // 픽업 서비스 - 배달팁 없음
+  const finalPrice = totalPrice;
   const displayShopName = isCartMode ? cartShopName : product?.shopName;
+
+  const handlePayment = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      // 주문 payload 구성
+      const orderItems = isCartMode
+        ? resolvedCartItems.map(e => ({
+            product_id: e.product.id,
+            product_name: e.product.name,
+            quantity: e.quantity,
+            unit_price: e.product.discountPrice,
+          }))
+        : product
+        ? [{
+            product_id: product.id,
+            product_name: product.name,
+            quantity: quantity,
+            unit_price: product.discountPrice,
+          }]
+        : [];
+
+      const orderPayload = {
+        buyer_id: buyerId ?? 0,
+        store_id: isCartMode ? null : (product?.storeId ?? null),
+        store_name: displayShopName ?? '알 수 없는 가게',
+        payment_method: method,
+        total_price: finalPrice,
+        items: orderItems,
+      };
+
+      const response = await fetch('http://localhost:8002/api/v1/orders/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error('주문 생성에 실패했습니다.');
+      }
+
+      const orderData = await response.json();
+
+      onComplete({
+        orderNumber: orderData.order_number,
+        storeName: orderData.store_name,
+        totalPrice: orderData.total_price,
+        paymentMethod: orderData.payment_method,
+      });
+    } catch (error) {
+      console.error('Order creation failed:', error);
+      alert('주문 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col bg-gray-50 min-h-full relative">
@@ -71,20 +124,20 @@ export function PaymentPage({ product, quantity = 1, cartItems, cartShopName, on
           {/* 장바구니 다중 상품 */}
           {isCartMode ? (
             <div className="flex flex-col divide-y divide-gray-50">
-              {resolvedCartItems.map(({ product: p, quantity: q }) => (
-                <div key={p.id} className="flex gap-3 items-center px-5 py-4">
+              {resolvedCartItems.map((e) => (
+                <div key={e.product.id} className="flex gap-3 items-center px-5 py-4">
                   <div className="w-14 h-14 bg-[#FFFBE6] rounded-xl overflow-hidden shrink-0 border border-yellow-100">
-                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    <img src={e.product.imageUrl} alt={e.product.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-[15px] text-gray-900 leading-snug">
-                      {p.name}
-                      {p.weight && <span className="text-xs text-gray-400 font-normal ml-1">({p.weight})</span>}
+                      {e.product.name}
+                      {e.product.weight && <span className="text-xs text-gray-400 font-normal ml-1">({e.product.weight})</span>}
                     </p>
-                    <p className="text-sm text-gray-500 mt-0.5">{p.discountPrice.toLocaleString()}원 × {q}개</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{e.product.discountPrice.toLocaleString()}원 × {e.quantity}개</p>
                   </div>
                   <span className="font-extrabold text-[15px] text-gray-800">
-                    {(p.discountPrice * q).toLocaleString()}원
+                    {(e.product.discountPrice * e.quantity).toLocaleString()}원
                   </span>
                 </div>
               ))}
@@ -159,10 +212,13 @@ export function PaymentPage({ product, quantity = 1, cartItems, cartShopName, on
       {/* ── 하단 결제 CTA 버튼 ── */}
       <div className="sticky bottom-0 w-full bg-white p-4 pb-6 border-t border-gray-100 drop-shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
         <button
-          onClick={onComplete}
-          className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm"
+          onClick={handlePayment}
+          disabled={isLoading}
+          className={`w-full text-black font-extrabold text-lg py-4 rounded-xl active:scale-95 transition-transform shadow-sm ${isLoading ? 'bg-gray-200 cursor-not-allowed' : 'bg-[#FFE400] hover:bg-yellow-400'}`}
         >
-          {method === 'toss'
+          {isLoading
+            ? '처리 중...'
+            : method === 'toss'
             ? `${finalPrice.toLocaleString()}원 토스로 결제하기`
             : '예약하고 현장에서 결제하기'}
         </button>

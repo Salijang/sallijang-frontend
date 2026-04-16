@@ -61,9 +61,10 @@ const NOTIF_STYLES: Record<NotifType, { bg: string; icon: string; badge: string 
   info:   { bg: 'bg-blue-50 border-blue-100',  icon: '✅', badge: 'bg-blue-500 text-white' },
 };
 
-export function HomePage({ onNavigate, onNavigateToCart, now, isPcVersion }: {
+export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVersion }: {
   onNavigate: (id: number) => void;
   onNavigateToCart?: () => void;
+  cartCount?: number;
   now: Date;
   isPcVersion?: boolean;
 }) {
@@ -171,7 +172,11 @@ export function HomePage({ onNavigate, onNavigateToCart, now, isPcVersion }: {
                 {/* 장바구니 */}
                 <div className="relative cursor-pointer" onClick={onNavigateToCart}>
                   <span>🛒</span>
-                  <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-[#FFFBE6]"></div>
+                  {(cartCount ?? 0) > 0 && (
+                    <div className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full border border-[#FFFBE6] flex items-center justify-center">
+                      <span className="text-[9px] font-black text-white leading-none px-0.5">{cartCount}</span>
+                    </div>
+                  )}
                 </div>
                 {/* 알림 벨 */}
                 <div className="relative cursor-pointer" onClick={() => setShowNotif(true)}>
@@ -389,43 +394,7 @@ export function HomePage({ onNavigate, onNavigateToCart, now, isPcVersion }: {
                 <div className="w-full bg-gray-200 h-1.5 rounded-full mb-1">
                   <div className={`h-full rounded-full ${stockRatio <= 0.3 ? 'bg-red-500' : 'bg-green-500'}`} style={{width: `${stockRatio * 100}%`}}></div>
                 </div>
-                <div className="text-[10px] text-gray-500 font-bold mb-2">{product.remaining}개 남음</div>
-
-                {/* ── 버튼 영역: 기본=예약하기, 호버 시 두 버튼 분리 ── */}
-                <div className="relative h-9 overflow-hidden">
-                  {/* 기본 상태: 예약하기 (호버 시 올라가며 사라짐) */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onNavigate(product.id); }}
-                    className="absolute inset-0 w-full bg-[#FFE400] text-black font-bold text-sm rounded-lg
-                      transition-all duration-200 ease-in-out
-                      group-hover:-translate-y-full group-hover:opacity-0"
-                  >
-                    예약하기
-                  </button>
-
-                  {/* 호버 상태: 두 버튼 나타남 (아래에서 올라옴) */}
-                  <div
-                    className="absolute inset-0 flex gap-1.5
-                      translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100
-                      transition-all duration-200 ease-in-out"
-                  >
-                    {/* 예약하기 */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onNavigate(product.id); }}
-                      className="flex-1 bg-[#FFE400] text-black font-bold text-xs rounded-lg hover:bg-yellow-400 active:scale-95 transition-colors"
-                    >
-                      예약하기
-                    </button>
-                    {/* 장바구니 추가 */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onNavigateToCart && onNavigateToCart(); }}
-                      className="flex-1 bg-black text-[#FFE400] font-bold text-xs rounded-lg hover:bg-gray-800 active:scale-95 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <span className="text-sm leading-none">🛒</span>
-                      담기
-                    </button>
-                  </div>
-                </div>
+                <div className="text-[10px] text-gray-500 font-bold">{product.remaining}개 남음</div>
               </div>
             </div>
           );

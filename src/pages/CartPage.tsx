@@ -1,86 +1,47 @@
-import React, { useState } from 'react';
-import type { Page, CartOrderItem } from '../types';
-import { DUMMY_PRODUCTS } from '../data';
+import React, { useMemo, useState, useEffect } from 'react';
+import type { Page, CartEntry } from '../types';
 
 /**
  * 장바구니 페이지
- * 가게별로 담긴 상품을 그룹화하여 보여주며, 가게별 선택 후 주문이 가능합니다.
- * 살리장 앱 디자인 시스템(#FFE400 노란색, 검정 포인트)을 따릅니다.
+ * App.tsx에서 관리하는 cart 상태를 받아 가게별로 그룹화하여 보여줍니다.
  */
-
-interface CartItem {
-  productId: number;
-  quantity: number;
-}
-
-interface CartGroup {
-  shopName: string;
-  items: CartItem[];
-}
-
-// 초기 장바구니 데이터: DUMMY_PRODUCTS 기반으로 구성
-const INITIAL_CART_GROUPS: CartGroup[] = [
-  {
-    shopName: '망원 정육점',
-    items: [
-      { productId: 1, quantity: 1 }, // 국내산 삼겹살
-      { productId: 6, quantity: 1 }, // 한우 불고기용
-    ],
-  },
-  {
-    shopName: '동네 베이커리',
-    items: [
-      { productId: 3, quantity: 2 }, // 오늘 구운 크루아상
-    ],
-  },
-];
-
-export function CartPage({ onNavigate, onBack, onOrder }: {
+export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdateQuantity }: {
   onNavigate: (page: Page) => void;
   onBack: () => void;
-  /** 주문하기 버튼 클릭 시 호출: 가게명과 주문 상품 목록을 App.tsx로 전달 */
-  onOrder: (shopName: string, items: CartOrderItem[]) => void;
+  onOrder: (shopName: string, entries: CartEntry[]) => void;
+  cart: CartEntry[];
+  onRemove: (productId: number) => void;
+  onUpdateQuantity: (productId: number, delta: number) => void;
 }) {
-  const [cartGroups, setCartGroups] = useState<CartGroup[]>(INITIAL_CART_GROUPS);
-  // 체크된 가게 목록 (기본: 첫 번째 가게만 선택)
-  const [checkedShops, setCheckedShops] = useState<string[]>([INITIAL_CART_GROUPS[0].shopName]);
+  // 가게별로 그룹화
+  const groups = useMemo(() => {
+    const map = new Map<string, CartEntry[]>();
+    cart.forEach(entry => {
+      const shop = entry.product.shopName;
+      if (!map.has(shop)) map.set(shop, []);
+      map.get(shop)!.push(entry);
+    });
+    return Array.from(map.entries()).map(([shopName, entries]) => ({ shopName, entries }));
+  }, [cart]);
+
+  // 체크된 가게 목록
+  const [checkedShops, setCheckedShops] = useState<string[]>([]);
+
+  // 새 가게가 추가되면 자동 체크
+  useEffect(() => {
+    const allShopNames = groups.map(g => g.shopName);
+    setCheckedShops(prev => {
+      const valid = prev.filter(s => allShopNames.includes(s));
+      const added = allShopNames.filter(s => !prev.includes(s));
+      return [...valid, ...added];
+    });
+  }, [groups.map(g => g.shopName).join(',')]);
 
   const toggleShopCheck = (shopName: string) => {
     setCheckedShops(prev =>
       prev.includes(shopName)
         ? prev.filter(s => s !== shopName)
         : [...prev, shopName]
-    );
-  };
-
-  const removeItem = (shopName: string, productId: number) => {
-    setCartGroups(prev => {
-      const updated = prev.map(group => {
-        if (group.shopName !== shopName) return group;
-        return { ...group, items: group.items.filter(i => i.productId !== productId) };
-      }).filter(group => group.items.length > 0);
-      // 상품이 사라진 가게는 체크 해제
-      const remainingShops = updated.map(g => g.shopName);
-      setCheckedShops(s => s.filter(name => remainingShops.includes(name)));
-      return updated;
-    });
-  };
-
-  const updateQuantity = (shopName: string, productId: number, delta: number) => {
-    setCartGroups(prev =>
-      prev.map(group => {
-        if (group.shopName !== shopName) return group;
-        return {
-          ...group,
-          items: group.items.map(item => {
-            if (item.productId !== productId) return item;
-            const product = DUMMY_PRODUCTS.find(p => p.id === productId);
-            const max = product?.remaining ?? 99;
-            const next = Math.max(1, Math.min(max, item.quantity + delta));
-            return { ...item, quantity: next };
-          }),
-        };
-      })
     );
   };
 
@@ -100,11 +61,13 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
       </header>
 
       {/* ── 안내 문구 ── */}
-      <p className="text-xs text-red-500 font-bold px-5 pt-4 pb-1">주문하고자 하는 가게 선택</p>
+      {groups.length > 0 && (
+        <p className="text-xs text-red-500 font-bold px-5 pt-4 pb-1">주문하고자 하는 가게 선택</p>
+      )}
 
       {/* ── 가게별 그룹 ── */}
       <div className="flex-1 flex flex-col gap-3 px-4 pb-8">
-        {cartGroups.length === 0 ? (
+        {groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 text-gray-400 py-32 gap-4">
             <span className="text-6xl">🛒</span>
             <p className="font-bold text-base">장바구니가 비어있어요!</p>
@@ -116,13 +79,9 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
             </button>
           </div>
         ) : (
-          cartGroups.map(group => {
+          groups.map(group => {
             const isChecked = checkedShops.includes(group.shopName);
-            let subtotal = 0;
-            group.items.forEach(item => {
-              const p = DUMMY_PRODUCTS.find(p => p.id === item.productId);
-              if (p) subtotal += p.discountPrice * item.quantity;
-            });
+            const subtotal = group.entries.reduce((s, e) => s + e.product.discountPrice * e.quantity, 0);
 
             return (
               <div key={group.shopName} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 mt-2">
@@ -132,7 +91,6 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                   onClick={() => toggleShopCheck(group.shopName)}
                   className="w-full flex items-center gap-3 px-5 py-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                 >
-                  {/* 체크박스 */}
                   <span className={`w-[22px] h-[22px] shrink-0 rounded border-2 flex items-center justify-center transition-colors ${isChecked ? 'bg-black border-black' : 'bg-white border-gray-300'}`}>
                     {isChecked && (
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
@@ -140,28 +98,26 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                       </svg>
                     )}
                   </span>
-                  {/* 가게 이모지 배지 */}
                   <span className="w-7 h-7 bg-[#FFE400] rounded-lg flex items-center justify-center text-base shrink-0">🏪</span>
                   <span className="font-bold text-[16px] text-gray-900 text-left flex-1">{group.shopName}</span>
                   <span className="text-xs text-gray-400 font-medium">
-                    {group.items.reduce((s, i) => s + i.quantity, 0)}개
+                    {group.entries.reduce((s, e) => s + e.quantity, 0)}개
                   </span>
                 </button>
 
                 {/* 상품 목록 */}
                 <div className="px-5 pt-4 pb-2 flex flex-col gap-5">
-                  {group.items.map(item => {
-                    const product = DUMMY_PRODUCTS.find(p => p.id === item.productId);
-                    if (!product) return null;
+                  {group.entries.map(entry => {
+                    const { product, quantity } = entry;
                     const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
 
                     return (
-                      <div key={item.productId} className="flex flex-col gap-3">
+                      <div key={product.id} className="flex flex-col gap-3">
                         {/* 상품명 + 삭제 */}
                         <div className="flex justify-between items-start">
                           <span className="font-bold text-[15px] text-gray-900 leading-snug flex-1 pr-2">{product.name}</span>
                           <button
-                            onClick={() => removeItem(group.shopName, item.productId)}
+                            onClick={() => onRemove(product.id)}
                             className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors shrink-0"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +130,6 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                         <div className="flex gap-3">
                           <div className="w-[72px] h-[72px] bg-[#FFFBE6] rounded-xl overflow-hidden shrink-0 border border-yellow-100 relative">
                             <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                            {/* 할인율 배지 */}
                             <span className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-black px-1 py-0.5 rounded">
                               -{discountRate}%
                             </span>
@@ -192,14 +147,14 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                         <div className="flex justify-end items-center gap-2">
                           <div className="flex items-center border border-gray-200 rounded-lg h-9 overflow-hidden bg-white">
                             <button
-                              onClick={() => updateQuantity(group.shopName, item.productId, -1)}
+                              onClick={() => onUpdateQuantity(product.id, -1)}
                               className="w-9 h-full flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
                             </button>
-                            <span className="w-8 text-center text-[14px] font-bold text-gray-800">{item.quantity}</span>
+                            <span className="w-8 text-center text-[14px] font-bold text-gray-800">{quantity}</span>
                             <button
-                              onClick={() => updateQuantity(group.shopName, item.productId, 1)}
+                              onClick={() => onUpdateQuantity(product.id, 1)}
                               className="w-9 h-full flex items-center justify-center text-gray-800 hover:bg-gray-50 transition-colors"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -221,7 +176,6 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                   <span className="text-base leading-none">+</span> 더 담으러 가기
                 </button>
 
-
                 {/* 금액 요약 */}
                 <div className="mx-5 mb-4 pt-3 border-t border-gray-100 flex flex-col gap-2.5">
                   <div className="flex justify-between text-[14px] text-gray-500">
@@ -238,7 +192,7 @@ export function CartPage({ onNavigate, onBack, onOrder }: {
                 <div className="px-5 pb-5">
                   <button
                     disabled={!isChecked}
-                    onClick={() => isChecked && onOrder(group.shopName, group.items)}
+                    onClick={() => isChecked && onOrder(group.shopName, group.entries)}
                     className={`w-full font-extrabold py-4 rounded-xl text-[16px] transition-all active:scale-95 ${
                       isChecked
                         ? 'bg-[#FFE400] text-black hover:bg-yellow-400 shadow-sm'
