@@ -59,7 +59,8 @@ export function ReservationCard({status, name, shop, time, id, imageUrl, onCance
           </div>
         </div>
         <div className="text-xs text-gray-500 mb-1">{shop}</div>
-        <div className="text-sm font-bold text-blue-600 mb-2">{time} <span className="text-gray-400 font-normal ml-1">({id})</span></div>
+        <div className="text-sm font-bold text-blue-600 mb-2">{time} </div>
+        <div className="text-gray-400 font-normal ml-1">주문 번호: {id}</div>
         <div className="mt-auto">
           {status === '대기' ? (
             <button onClick={onCancel} className="w-full py-1.5 border border-red-200 text-red-500 font-bold rounded-lg text-xs hover:bg-red-50 transition-colors">예약 취소</button>

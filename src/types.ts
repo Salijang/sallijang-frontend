@@ -34,6 +34,7 @@ export interface Product {
   description?: string;
   storeId?: number;
   storeAddress?: string;
+  pickupDeadline?: string;
 }
 
 /** 주문 생성 후 CompletePage에 전달되는 결과 */

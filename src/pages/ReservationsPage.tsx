@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ReservationCard } from '../components/SharedComponents';
 
 interface OrderItem {
@@ -18,6 +18,7 @@ interface Order {
   status: string;
   payment_method: string;
   total_price: number;
+  pickup_expected_at: string | null;
   created_at: string;
   items: OrderItem[];
 }
@@ -103,20 +104,29 @@ export function ReservationsPage({
     }
   };
 
-  const formatTime = (isoString: string) => {
+  /** "HH:MM" → "오전/오후 H시 M분" */
+  const formatPickupExpected = (hhMM: string): string => {
+    const [h, m] = hhMM.split(':').map(Number);
+    const period = h < 12 ? '오전' : '오후';
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${period} ${hour12}시${m > 0 ? ` ${m}분` : ''}`;
+  };
+
+  /** ISO datetime → "오전/오후 H시 M분" (오늘) or "M월 D일 오전/오후 H시" (다른 날) */
+  const formatAbsoluteTime = (isoString: string): string => {
     const date = new Date(isoString);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffH = Math.floor(diffMs / 3600000);
-    if (diffH < 1) return '방금 전';
-    if (diffH < 24) return `${diffH}시간 전`;
-    const diffD = Math.floor(diffH / 24);
-    return `${diffD}일 전`;
+    const isToday = date.toDateString() === now.toDateString();
+    const h = date.getHours();
+    const m = date.getMinutes();
+    const period = h < 12 ? '오전' : '오후';
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const timeStr = `${period} ${hour12}시${m > 0 ? ` ${m}분` : ''}`;
+    return isToday ? timeStr : `${date.getMonth() + 1}월 ${date.getDate()}일 ${timeStr}`;
   };
 
   // ── 판매자 주문 상세 뷰 ──
   if (userRole === 'SELLER' && selectedOrder) {
-    const firstItem = selectedOrder.items[0];
     return (
       <div className="flex flex-col h-full bg-gray-50">
         <header className="bg-white p-4 flex items-center sticky top-0 z-10 border-b border-gray-100 shrink-0 shadow-sm">
@@ -162,9 +172,17 @@ export function ReservationsPage({
             <div className="flex justify-between text-sm items-center">
               <span className="font-bold text-gray-500">주문 시각</span>
               <span className="font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                {formatTime(selectedOrder.created_at)}
+                {formatAbsoluteTime(selectedOrder.created_at)}
               </span>
             </div>
+            {selectedOrder.pickup_expected_at && (
+              <div className="flex justify-between text-sm items-center">
+                <span className="font-bold text-gray-500">고객 픽업 예정</span>
+                <span className="font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                  {formatPickupExpected(selectedOrder.pickup_expected_at)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-3 mt-4">
@@ -213,7 +231,7 @@ export function ReservationsPage({
                 <div className="flex-1 flex flex-col justify-center gap-1">
                   <div className="flex justify-between items-start">
                     <div className="font-bold text-[15px] line-clamp-1 leading-snug text-gray-900 pr-2">
-                      {order.items.map(i => i.product_name).join(', ')}
+                      {order.items.map(i => `${i.product_name} x${i.quantity}`).join(', ')}
                     </div>
                     <div className="text-[11px] px-2 py-0.5 rounded-full font-bold shrink-0 bg-[#FFE400] text-black shadow-sm tracking-tight">
                       대기중
@@ -221,9 +239,16 @@ export function ReservationsPage({
                   </div>
                   <div className="text-sm font-bold text-gray-700 flex items-center justify-between">
                     <span>{order.total_price.toLocaleString()}원</span>
-                    <span className="text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md text-xs">
-                      {formatTime(order.created_at)}
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md text-xs">
+                        주문 {formatAbsoluteTime(order.created_at)}
+                      </span>
+                      {order.pickup_expected_at && (
+                        <span className="text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md text-xs">
+                          픽업 예정 {formatPickupExpected(order.pickup_expected_at)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs text-gray-400">#{order.order_number}</div>
                 </div>
@@ -256,16 +281,20 @@ export function ReservationsPage({
           </div>
         ) : orders.length > 0 ? (
           orders.map(order => (
-            <ReservationCard
-              key={order.id}
-              status="대기"
-              name={order.items.map(i => i.product_name).join(', ')}
-              shop={order.store_name}
-              time={formatTime(order.created_at)}
-              id={`#${order.order_number}`}
-              imageUrl=""
-              onCancel={() => handleCancel(order.id)}
-            />
+            <div key={order.id} className="flex flex-col gap-1">
+              <ReservationCard
+                status="대기"
+                name={order.items.map(i => `${i.product_name} x${i.quantity}`).join(', ')}
+                shop={order.store_name}
+                time={order.pickup_expected_at ? `픽업 예정: ${formatPickupExpected(order.pickup_expected_at)}` : '-'}
+                id={`#${order.order_number}`}
+                imageUrl=""
+                onCancel={() => handleCancel(order.id)}
+              />
+              <div className="text-xs text-gray-400 font-bold px-2">
+                주문 시각: {formatAbsoluteTime(order.created_at)}
+              </div>
+            </div>
           ))
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">

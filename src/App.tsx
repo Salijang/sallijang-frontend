@@ -32,6 +32,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('login');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [orderQuantity, setOrderQuantity] = useState(1);
+  const [pickupExpectedAt, setPickupExpectedAt] = useState<string>('');
   const [userRole, setUserRole] = useState<'USER' | 'SELLER'>('USER');
   const [isPcVersion, setIsPcVersion] = useState(false);
 
@@ -94,7 +95,7 @@ export default function App() {
          .then(res => res.json())
          .then(data => {
             setFetchedProduct({
-              id: data.id, name: data.name, originalPrice: data.original_price, discountPrice: data.discount_price, remaining: data.remaining, totalQuantity: data.total_quantity, expiryMinutes: data.expiry_minutes, category: data.category, imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600", weight: data.weight, description: data.description, shopName: data.shop_name || "가게", distance: data.distance, storeId: data.store_id, storeAddress: data.store_address
+              id: data.id, name: data.name, originalPrice: data.original_price, discountPrice: data.discount_price, remaining: data.remaining, totalQuantity: data.total_quantity, expiryMinutes: data.expiry_minutes, category: data.category, imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600", weight: data.weight, description: data.description, shopName: data.shop_name || "가게", distance: data.distance, storeId: data.store_id, storeAddress: data.store_address, pickupDeadline: data.pickup_deadline
             });
          }).catch(console.error);
     }
@@ -127,7 +128,7 @@ export default function App() {
            {currentPage === 'login' && <LoginPage onLogin={(role, uid, sid, name) => { setUserRole(role); if (uid) setUserId(uid); if (sid) setStoreId(sid); if (name) setUserName(name); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
            {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
            {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} />}
-           {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty) => { setOrderQuantity(qty); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
+           {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
 
            {/* Wrap mobile-focused pages in a PC card */}
            {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy'].includes(currentPage) && (
@@ -136,7 +137,7 @@ export default function App() {
                {currentPage === 'payment' && (
                  cartOrderEntries.length > 0
                    ? <PaymentPage cartEntries={cartOrderEntries} cartShopName={cartOrderShopName} buyerId={userId} onBack={() => { setCartOrderEntries([]); navigateTo('cart'); }} onComplete={handlePaymentComplete} />
-                   : <PaymentPage product={selectedProduct} quantity={orderQuantity} buyerId={userId} onBack={() => navigateTo('detail')} onComplete={handlePaymentComplete} />
+                   : <PaymentPage product={selectedProduct} quantity={orderQuantity} buyerId={userId} pickupExpectedAt={pickupExpectedAt} onBack={() => navigateTo('detail')} onComplete={handlePaymentComplete} />
                )}
                {currentPage === 'complete' && <CompletePage onNavigate={navigateTo} product={selectedProduct} orderResult={orderResult} />}
                {currentPage === 'reservations' && <ReservationsPage userRole={userRole} buyerId={userId} storeId={storeId} />}
@@ -173,11 +174,11 @@ export default function App() {
           {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} />}
           {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} />}
-          {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty) => { setOrderQuantity(qty); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
+          {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
           {currentPage === 'payment' && (
             cartOrderEntries.length > 0
               ? <PaymentPage cartEntries={cartOrderEntries} cartShopName={cartOrderShopName} buyerId={userId} onBack={() => { setCartOrderEntries([]); navigateTo('cart'); }} onComplete={handlePaymentComplete} />
-              : <PaymentPage product={selectedProduct} quantity={orderQuantity} buyerId={userId} onBack={() => navigateTo('detail')} onComplete={handlePaymentComplete} />
+              : <PaymentPage product={selectedProduct} quantity={orderQuantity} buyerId={userId} pickupExpectedAt={pickupExpectedAt} onBack={() => navigateTo('detail')} onComplete={handlePaymentComplete} />
           )}
           {currentPage === 'complete' && <CompletePage onNavigate={navigateTo} product={selectedProduct} orderResult={orderResult} />}
           {currentPage === 'reservations' && <ReservationsPage userRole={userRole} buyerId={userId} storeId={storeId} />}

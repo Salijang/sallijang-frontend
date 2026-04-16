@@ -113,21 +113,25 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
        fetch(url)
          .then(res => res.json())
          .then(data => {
-               const mapped: Product[] = data.map((d: any) => ({
-                 id: d.id,
-                 name: d.name,
-                 originalPrice: d.original_price,
-                 discountPrice: d.discount_price,
-                 remaining: d.remaining,
-                 totalQuantity: d.total_quantity,
-                 expiryMinutes: d.expiry_minutes,
-                 category: d.category,
-                 imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
-                 weight: d.weight,
-                 description: d.description,
-                 shopName: d.shop_name || "알 수 없는 가게",
-                 distance: d.distance || "500m"
-               }));
+               const mapped: Product[] = data
+                 .filter((d: any) => d.remaining > 0)
+                 .map((d: any) => ({
+                   id: d.id,
+                   name: d.name,
+                   originalPrice: d.original_price,
+                   discountPrice: d.discount_price,
+                   remaining: d.remaining,
+                   totalQuantity: d.total_quantity,
+                   expiryMinutes: d.expiry_minutes,
+                   category: d.category,
+                   imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+                   weight: d.weight,
+                   description: d.description,
+                   shopName: d.shop_name || "알 수 없는 가게",
+                   distance: d.distance || "500m",
+                   storeId: d.store_id,
+                   pickupDeadline: d.pickup_deadline,
+                 }));
                setProducts(mapped);
          })
          .catch(console.error);

@@ -11,14 +11,63 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
   const [price, setPrice] = useState<number | "">(15000);
   const [quantity, setQuantity] = useState<number | "">(5);
   const [discount, setDiscount] = useState(60);
-  const [time, setTime] = useState("20:00");
+  const [time, setTime] = useState(() => {
+    // 현재 시간 이후 첫 30분 경계, 기본값은 20:00 (아직 안 지났으면)
+    const now = new Date();
+    const nowM = now.getMinutes();
+    let h = nowM > 30 ? now.getHours() + 1 : now.getHours();
+    let m = nowM <= 0 ? 0 : nowM <= 30 ? 30 : 0;
+    if (h > 23) { h = 23; m = 30; }
+    if (h < 20) { h = 20; m = 0; }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  });
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("🥩 정육");
-  
+
   const [attempted, setAttempted] = useState(false);
 
   // 10원 단위를 버리고 100원 단위로 맞춤 (예: 5850원 -> 5800원)
   const discountedPrice = Math.floor(((Number(price) || 0) * (1 - discount / 100)) / 100) * 100;
+
+  // 현재 시간 이후 30분 간격 슬롯 (오늘 23:30까지)
+  const now = new Date();
+  const nowH = now.getHours();
+  const nowM = now.getMinutes();
+  const timeSlots: string[] = (() => {
+    const slots: string[] = [];
+    let h = nowM > 30 ? nowH + 1 : nowH;
+    let m = nowM <= 0 ? 0 : nowM <= 30 ? 30 : 0;
+    while (h <= 23) {
+      slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      m += 30;
+      if (m >= 60) { m = 0; h++; }
+    }
+    return slots;
+  })();
+
+  const formatSlotLabel = (hhMM: string): string => {
+    const [h, m] = hhMM.split(':').map(Number);
+    const period = h < 12 ? '오전' : '오후';
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${period} ${hour12}시${m > 0 ? ` ${m}분` : ''}`;
+  };
+
+  /** "HH:MM" 기준으로 오늘 날짜의 픽업 마감 전체 datetime 문자열 반환 */
+  const buildDeadline = (hhMM: string): string => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${day}T${hhMM}`;
+  };
+
+  /** 픽업 마감 시각(HH:MM)을 지금부터의 남은 분으로 환산합니다. */
+  const calcExpiryMinutes = (hhMM: string): number => {
+    const [h, m] = hhMM.split(':').map(Number);
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    const diff = Math.floor((target.getTime() - now.getTime()) / 60000);
+    return Math.max(1, diff);
+  };
 
   const handleSubmit = async () => {
     setAttempted(true);
@@ -40,7 +89,8 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
             discount_price: discountedPrice,
             remaining: Number(quantity) || 0,
             total_quantity: Number(quantity) || 0,
-            expiry_minutes: 120, // 임시 고정값
+            expiry_minutes: calcExpiryMinutes(time),
+            pickup_deadline: buildDeadline(time),
             category,
             image_url: "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
             weight,
@@ -134,8 +184,20 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">픽업 마감 시간 <span className="text-red-500">*</span></label>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)} className={`w-full p-3 rounded-lg font-bold outline-none border transition-colors ${getBorderClass(time)}`} />
+            <label className="block text-sm font-bold text-gray-700 mb-1">픽업 마감 시간 (오후 11:30까지) <span className="text-red-500">*</span></label>
+            {timeSlots.length > 0 ? (
+              <select
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                className={`w-full p-3 rounded-lg font-bold outline-none border transition-colors ${getBorderClass(time)}`}
+              >
+                {timeSlots.map(slot => (
+                  <option key={slot} value={slot}>{formatSlotLabel(slot)}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-red-500 font-bold py-2">오늘은 더 이상 등록 가능한 시간이 없습니다.</p>
+            )}
           </div>
 
           <div>

@@ -16,11 +16,12 @@ interface PaymentPageProps {
   cartShopName?: string;
   // 공통
   buyerId?: number | null;
+  pickupExpectedAt?: string;
   onBack: () => void;
   onComplete: (result: OrderResult) => void;
 }
 
-export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, buyerId, onBack, onComplete }: PaymentPageProps) {
+export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, buyerId, pickupExpectedAt, onBack, onComplete }: PaymentPageProps) {
   const [method, setMethod] = useState<'toss' | 'onsite'>('toss');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,10 +62,11 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
 
       const orderPayload = {
         buyer_id: buyerId ?? 0,
-        store_id: isCartMode ? null : (product?.storeId ?? null),
+        store_id: isCartMode ? (resolvedCartItems[0]?.product.storeId ?? null) : (product?.storeId ?? null),
         store_name: displayShopName ?? '알 수 없는 가게',
         payment_method: method,
         total_price: finalPrice,
+        pickup_expected_at: isCartMode ? null : (pickupExpectedAt || null),
         items: orderItems,
       };
 

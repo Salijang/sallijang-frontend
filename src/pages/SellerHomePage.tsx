@@ -5,7 +5,6 @@ import React, { useState } from 'react';
  * 매출액, 요약 등 판매자의 전반적 활동을 요약합니다.
  */
 export function SellerHomePage({ isPcVersion, userName }: { isPcVersion?: boolean; userName?: string }) {
-  const [pauseBusiness, setPauseBusiness] = useState(false);
   const [noticeExpanded, setNoticeExpanded] = useState(false);
 
   const notices = [
@@ -80,19 +79,6 @@ export function SellerHomePage({ isPcVersion, userName }: { isPcVersion?: boolea
           </div>
         </div>
 
-        <div className="bg-gray-100/60 rounded-2xl p-5 flex justify-between items-center h-[90px] mt-1 shadow-sm border border-gray-50/50">
-          <div className="flex flex-col gap-1.5 h-full justify-center mt-1">
-            <span className="font-extrabold text-[16px] text-gray-900 leading-none">영업임시중지</span>
-            <span className="text-gray-500 font-bold text-[13px] leading-none tracking-tight">모든 가게에 적용돼요</span>
-          </div>
-          <div 
-            onClick={() => setPauseBusiness(!pauseBusiness)}
-            className={`w-[52px] h-[30px] rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out relative flex items-center ${pauseBusiness ? 'bg-gray-800' : 'bg-gray-300'}`}
-          >
-            <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ease-in-out absolute ${pauseBusiness ? 'translate-x-[22px]' : 'translate-x-0'}`}></div>
-          </div>
-        </div>
-        
         <div className="h-px bg-gray-200/60 w-full mt-4 mb-1"></div>
 
         {/* Updated Notices */}
