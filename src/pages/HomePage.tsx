@@ -102,55 +102,83 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
 
   const [products, setProducts] = useState<Product[]>([]);
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const ITEMS_PER_PAGE = 20;
 
   React.useEffect(() => {
     // 1. 위치 정보 획득 시도 (거부 시 기본 위치인 '망원역' 주변 지정)
-    const fetchWithLocation = (lat?: number, lng?: number) => {
-       const url = (lat !== undefined && lng !== undefined) 
-           ? `http://localhost:8001/api/v1/products/?user_lat=${lat}&user_lng=${lng}`
-           : `http://localhost:8001/api/v1/products/`;
+    const fetchProducts = (lat?: number, lng?: number, pageNum: number = 0) => {
+      setIsLoading(true);
+      const params = new URLSearchParams({
+        limit: ITEMS_PER_PAGE.toString(),
+        offset: (pageNum * ITEMS_PER_PAGE).toString(),
+      });
 
-       fetch(url)
-         .then(res => res.json())
-         .then(data => {
-               const mapped: Product[] = data
-                 .filter((d: any) => d.remaining > 0)
-                 .map((d: any) => ({
-                   id: d.id,
-                   name: d.name,
-                   originalPrice: d.original_price,
-                   discountPrice: d.discount_price,
-                   remaining: d.remaining,
-                   totalQuantity: d.total_quantity,
-                   expiryMinutes: d.expiry_minutes,
-                   category: d.category,
-                   imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
-                   weight: d.weight,
-                   description: d.description,
-                   shopName: d.shop_name || "알 수 없는 가게",
-                   distance: d.distance || "500m",
-                   storeId: d.store_id,
-                   pickupDeadline: d.pickup_deadline,
-                 }));
-               setProducts(mapped);
-         })
-         .catch(console.error);
+      if (lat !== undefined && lng !== undefined) {
+        params.append('user_lat', lat.toString());
+        params.append('user_lng', lng.toString());
+      }
+
+      const url = `http://localhost:8001/api/v1/products/?${params.toString()}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          const mapped: Product[] = data.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            originalPrice: d.original_price,
+            discountPrice: d.discount_price,
+            remaining: d.remaining,
+            totalQuantity: d.total_quantity,
+            expiryMinutes: d.expiry_minutes,
+            category: d.category,
+            imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+            weight: d.weight,
+            description: d.description,
+            shopName: d.shop_name || "알 수 없는 가게",
+            distance: d.distance || "거리 알 수 없음",
+            storeId: d.store_id,
+            pickupDeadline: d.pickup_deadline,
+          }));
+
+          if (pageNum === 0) {
+            setProducts(mapped);
+          } else {
+            setProducts(prev => [...prev, ...mapped]);
+          }
+
+          // 받은 데이터가 ITEMS_PER_PAGE보다 적으면 더 이상 데이터 없음
+          setHasMore(data.length === ITEMS_PER_PAGE);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setIsLoading(false);
+        });
+    };
+
+    const initFetch = (lat?: number, lng?: number) => {
+      setPage(0);
+      fetchProducts(lat, lng, 0);
     };
 
     if (navigator.geolocation) {
-       navigator.geolocation.getCurrentPosition(
-         (pos) => {
-            setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            fetchWithLocation(pos.coords.latitude, pos.coords.longitude);
-         },
-         (err) => {
-            console.warn("Geolocation API Error:", err);
-            // 권한 거부 시 임의의 망원동 좌표로 폴백
-            fetchWithLocation(37.556, 126.903);
-         }
-       );
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          initFetch(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          console.warn("Geolocation API Error:", err);
+          // 권한 거부 시 임의의 망원동 좌표로 폴백
+          initFetch(37.556, 126.903);
+        }
+      );
     } else {
-       fetchWithLocation();
+      initFetch();
     }
   }, []);
 
@@ -404,6 +432,59 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
           );
         })}
       </div>
+
+      {/* 더보기 버튼 */}
+      {hasMore && filteredProducts.length > 0 && (
+        <div className="flex justify-center py-6">
+          <button
+            onClick={() => {
+              const nextPage = page + 1;
+              setPage(nextPage);
+              const params = new URLSearchParams({
+                limit: ITEMS_PER_PAGE.toString(),
+                offset: (nextPage * ITEMS_PER_PAGE).toString(),
+              });
+              if (userLoc) {
+                params.append('user_lat', userLoc.lat.toString());
+                params.append('user_lng', userLoc.lng.toString());
+              }
+              const url = `http://localhost:8001/api/v1/products/?${params.toString()}`;
+              setIsLoading(true);
+              fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                  setProducts(prev => [...prev, ...data.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    originalPrice: d.original_price,
+                    discountPrice: d.discount_price,
+                    remaining: d.remaining,
+                    totalQuantity: d.total_quantity,
+                    expiryMinutes: d.expiry_minutes,
+                    category: d.category,
+                    imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+                    weight: d.weight,
+                    description: d.description,
+                    shopName: d.shop_name || "알 수 없는 가게",
+                    distance: d.distance || "거리 알 수 없음",
+                    storeId: d.store_id,
+                    pickupDeadline: d.pickup_deadline,
+                  }))]);
+                  setHasMore(data.length === ITEMS_PER_PAGE);
+                  setIsLoading(false);
+                })
+                .catch(err => {
+                  console.error(err);
+                  setIsLoading(false);
+                });
+            }}
+            disabled={isLoading}
+            className="px-6 py-3 bg-black text-[#FFE400] font-bold rounded-full hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? '로딩 중...' : '더보기'}
+          </button>
+        </div>
+      )}
 
       {/* 드로어 슬라이드업 애니메이션 */}
       <style>{`

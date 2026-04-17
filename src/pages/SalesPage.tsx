@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Page, Product } from '../types';
-import { DUMMY_PRODUCTS } from '../data';
 
 /**
  * 판매자가 등록한 상품을 관리하는 페이지.
@@ -9,7 +8,7 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
   const [products, setProducts] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (storeId) {
       fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`)
         .then(res => res.json())
