@@ -144,7 +144,7 @@ function EditProductView({ product, onSave, onCancel }: { product: Product, onSa
               <div className="flex flex-col gap-1.5">
                 <span className="font-bold text-sm text-gray-700">총 수량</span>
                 <div className="relative">
-                  <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-bold outline-none text-right pr-8 focus:border-[#FFE400] transition-colors focus:bg-white" />
+                  <input type="number" value={quantity} disabled className="w-full p-3.5 bg-gray-100 border border-gray-200 rounded-xl font-bold outline-none text-right pr-8 text-gray-400 cursor-not-allowed" />
                   <span className="absolute right-3 top-3.5 font-bold text-gray-500">개</span>
                 </div>
               </div>

@@ -41,8 +41,8 @@ export function ReservationsPage({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
+  const fetchOrders = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       let url = 'http://localhost:8002/api/v1/orders/?status=pending';
       if (userRole === 'SELLER' && storeId) {
@@ -50,7 +50,6 @@ export function ReservationsPage({
       } else if (buyerId) {
         url += `&buyer_id=${buyerId}`;
       } else {
-        // 로그인 정보 없으면 빈 목록
         setOrders([]);
         return;
       }
@@ -62,13 +61,24 @@ export function ReservationsPage({
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchOrders();
   }, [userRole, buyerId, storeId]);
+
+  useEffect(() => {
+    if (userRole !== 'SELLER' || !storeId) return;
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(`http://localhost:8002/api/v1/orders/?status=pending&store_id=${storeId}`);
+        if (res.ok) setOrders(await res.json());
+      } catch {}
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [userRole, storeId]);
 
   const handleCancel = async (orderId: number) => {
     if (!window.confirm('정말 취소하겠습니까?')) return;
@@ -78,6 +88,7 @@ export function ReservationsPage({
       });
       if (res.ok) {
         setOrders(prev => prev.filter(o => o.id !== orderId));
+        setSelectedOrder(null);
         alert('예약이 취소되었습니다.');
       }
     } catch (error) {
@@ -193,10 +204,10 @@ export function ReservationsPage({
               픽업 완료 처리하기
             </button>
             <button
-              onClick={() => setSelectedOrder(null)}
-              className="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl active:scale-95 transition-transform shadow-sm"
+              onClick={() => handleCancel(selectedOrder.id)}
+              className="w-full bg-white border-2 border-red-200 text-red-500 font-bold py-4 rounded-xl active:scale-95 transition-transform shadow-sm"
             >
-              목록으로 돌아가기
+              예약 취소하기
             </button>
           </div>
         </div>

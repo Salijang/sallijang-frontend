@@ -76,6 +76,12 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
         body: JSON.stringify(orderPayload),
       });
 
+      if (response.status === 409 || response.status === 503) {
+        const errorData = await response.json();
+        alert(errorData.detail ?? '주문을 처리할 수 없습니다. 다시 시도해주세요.');
+        return;
+      }
+
       if (!response.ok) {
         throw new Error('주문 생성에 실패했습니다.');
       }

@@ -108,9 +108,9 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   const ITEMS_PER_PAGE = 20;
 
   React.useEffect(() => {
-    // 1. 위치 정보 획득 시도 (거부 시 기본 위치인 '망원역' 주변 지정)
-    const fetchProducts = (lat?: number, lng?: number, pageNum: number = 0) => {
-      setIsLoading(true);
+    // silent=true 이면 로딩 스피너 없이 백그라운드 갱신
+    const fetchProducts = (lat?: number, lng?: number, pageNum: number = 0, silent: boolean = false) => {
+      if (!silent) setIsLoading(true);
       const params = new URLSearchParams({
         limit: ITEMS_PER_PAGE.toString(),
         offset: (pageNum * ITEMS_PER_PAGE).toString(),
@@ -150,13 +150,12 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
             setProducts(prev => [...prev, ...mapped]);
           }
 
-          // 받은 데이터가 ITEMS_PER_PAGE보다 적으면 더 이상 데이터 없음
           setHasMore(data.length === ITEMS_PER_PAGE);
-          setIsLoading(false);
+          if (!silent) setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
-          setIsLoading(false);
+          if (!silent) setIsLoading(false);
         });
     };
 
@@ -165,21 +164,38 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       fetchProducts(lat, lng, 0);
     };
 
+    // interval에서 사용할 현재 위치 (geolocation 콜백 이후 설정됨)
+    let currentLat: number | undefined;
+    let currentLng: number | undefined;
+
+    const startRefreshInterval = () =>
+      setInterval(() => fetchProducts(currentLat, currentLng, 0, true), 60_000);
+
+    let intervalId: ReturnType<typeof setInterval>;
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          initFetch(pos.coords.latitude, pos.coords.longitude);
+          currentLat = pos.coords.latitude;
+          currentLng = pos.coords.longitude;
+          setUserLoc({ lat: currentLat, lng: currentLng });
+          initFetch(currentLat, currentLng);
+          intervalId = startRefreshInterval();
         },
         (err) => {
           console.warn("Geolocation API Error:", err);
-          // 권한 거부 시 임의의 망원동 좌표로 폴백
-          initFetch(37.556, 126.903);
+          currentLat = 37.556;
+          currentLng = 126.903;
+          initFetch(currentLat, currentLng);
+          intervalId = startRefreshInterval();
         }
       );
     } else {
       initFetch();
+      intervalId = startRefreshInterval();
     }
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const filteredProducts = products.filter(p => {
