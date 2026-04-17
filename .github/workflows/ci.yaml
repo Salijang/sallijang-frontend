@@ -2,7 +2,7 @@ name: CI to AWS ECR (Frontend)
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "dev_yji" ]
   pull_request:
     branches: [ "main" ]
 
