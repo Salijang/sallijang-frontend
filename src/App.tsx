@@ -95,7 +95,7 @@ export default function App() {
          .then(res => res.json())
          .then(data => {
             setFetchedProduct({
-              id: data.id, name: data.name, originalPrice: data.original_price, discountPrice: data.discount_price, remaining: data.remaining, totalQuantity: data.total_quantity, expiryMinutes: data.expiry_minutes, category: data.category, imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600", weight: data.weight, description: data.description, shopName: data.shop_name || "가게", distance: data.distance, storeId: data.store_id, storeAddress: data.store_address, pickupDeadline: data.pickup_deadline
+              id: data.id, name: data.name, originalPrice: data.original_price, discountPrice: data.discount_price, remaining: data.remaining, totalQuantity: data.total_quantity, expiryMinutes: data.expiry_minutes, category: data.category, imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600", weight: data.weight, description: data.description, shopName: data.shop_name || "가게", distance: data.distance, storeId: data.store_id, storeAddress: data.store_address, storeAddressDetail: data.store_address_detail ?? undefined, pickupDeadline: data.pickup_deadline
             });
          }).catch(console.error);
     }

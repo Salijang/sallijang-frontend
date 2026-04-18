@@ -38,6 +38,9 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   const [showNotif, setShowNotif] = useState(false);
   const { unreadCount } = useNotifications(userId ?? null);
 
+  const selectedCategoryRef = useRef(selectedCategory);
+  selectedCategoryRef.current = selectedCategory;
+
   const [products, setProducts] = useState<Product[]>([]);
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
   const userLocRef = useRef<{lat: number, lng: number} | null>(null);
@@ -61,6 +64,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
     shopName: d.shop_name || "알 수 없는 가게",
     distance: d.distance || "거리 알 수 없음",
     storeId: d.store_id,
+    storeAddressDetail: d.store_address_detail ?? undefined,
     pickupDeadline: d.pickup_deadline,
   });
 
@@ -78,7 +82,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       params.append('user_lng', lng.toString());
     }
     if (category && category !== '전체') {
-      params.append('category', category.replace(/[^\uAC00-\uD7A3]/g, ''));
+      params.append('category', category);
     }
 
     fetch(`http://localhost:8001/api/v1/products/?${params.toString()}`)
@@ -102,7 +106,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       userLocRef.current = lat !== undefined && lng !== undefined ? { lat, lng } : null;
       setUserLoc(userLocRef.current);
       setPage(0);
-      fetchProducts({ lat, lng, pageNum: 0 });
+      fetchProducts({ lat, lng, pageNum: 0, category: selectedCategoryRef.current });
     };
 
     if (navigator.geolocation) {
@@ -116,8 +120,8 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
 
     const intervalId = setInterval(() => {
       const loc = userLocRef.current;
-      fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true });
-    }, 60_000);
+      fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true, category: selectedCategoryRef.current });
+    }, 20_000);
 
     return () => clearInterval(intervalId);
   }, [fetchProducts]);
@@ -128,9 +132,26 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
     fetchProducts({ lat: userLocRef.current?.lat, lng: userLocRef.current?.lng, pageNum: 0, category: selectedCategory });
   }, [selectedCategory, fetchProducts]);
 
-  const filteredProducts = products.filter(p =>
-    p.name.includes(searchQuery) || p.shopName.includes(searchQuery)
-  );
+  const calcRemainingMinutes = (p: Product): number => {
+    if (p.pickupDeadline && p.pickupDeadline.includes('-'))
+      return Math.floor((new Date(p.pickupDeadline).getTime() - now.getTime()) / 60000);
+    return p.expiryMinutes;
+  };
+
+  const filteredProducts = products.filter(p => {
+    if (calcRemainingMinutes(p) <= 0) return false;
+    if (selectedCategory !== '전체' && p.category !== selectedCategory) return false;
+    return p.name.includes(searchQuery) || p.shopName.includes(searchQuery);
+  });
+
+  // 현재 목록 중 가장 빨리 마감되는 상품의 deadline
+  const soonestDeadline: Date | null = (() => {
+    const deadlines = filteredProducts
+      .filter(p => p.pickupDeadline && p.pickupDeadline.includes('-'))
+      .map(p => new Date(p.pickupDeadline!));
+    if (deadlines.length === 0) return null;
+    return deadlines.reduce((a, b) => a < b ? a : b);
+  })();
 
   return (
     <div className={`flex flex-col min-h-full ${isPcVersion ? 'bg-transparent' : 'bg-white'} relative pb-6`}>
@@ -191,9 +212,9 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
            <div className="relative z-10">
              <h2 className="text-4xl font-black mb-4 tracking-tight">🔥 지금 이 순간 특가!</h2>
              <div className="text-xl font-bold flex items-center gap-4">
-                마감까지 남은 시간
+                가장 빠른 마감까지
                 <span className="bg-black text-[#FFE400] px-4 py-2 rounded-xl shadow-lg shadow-black/10 text-2xl tracking-wider font-mono animate-pulse-soft">
-                  {formatCountdown(new Date(now.getTime() + 60 * 60 * 1000 - (now.getTime() % (60 * 60 * 1000))), now)}
+                  {soonestDeadline ? formatCountdown(soonestDeadline, now) : '--:--:--'}
                 </span>
              </div>
            </div>
@@ -204,9 +225,9 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
           <div className="absolute right-0 top-0 w-40 h-40 bg-white/30 rounded-full blur-[30px] -translate-y-10 translate-x-10"></div>
           <h2 className="text-[26px] font-black mb-1.5 relative z-10 tracking-tight">🔥 지금 이 순간만!</h2>
           <div className="flex items-center gap-2 font-bold relative z-10">
-            <span className="opacity-90">마감까지 남은 시간</span>
+            <span className="opacity-90">가장 빠른 마감까지</span>
             <span className="bg-black text-[#FFE400] px-3 py-1 rounded shadow-lg shadow-black/10 text-lg tracking-wider font-mono animate-pulse-soft">
-              {formatCountdown(new Date(now.getTime() + 60 * 60 * 1000 - (now.getTime() % (60 * 60 * 1000))), now)}
+              {soonestDeadline ? formatCountdown(soonestDeadline, now) : '--:--:--'}
             </span>
           </div>
         </div>
@@ -248,7 +269,8 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
         )}
         {filteredProducts.map((product, i) => {
           const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
-          const isUrgent = product.expiryMinutes <= 30;
+          const remainingMinutes = Math.max(0, calcRemainingMinutes(product));
+          const isUrgent = remainingMinutes <= 30;
           const stockRatio = product.remaining / product.totalQuantity;
 
           return (
@@ -264,7 +286,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
                   -{discountRate}%
                 </div>
                 <div className={`absolute top-2 right-2 font-bold text-xs px-2 py-1 rounded-md shadow ${isUrgent ? 'bg-red-500 text-white' : 'bg-white text-gray-800'}`}>
-                  ⏰ {product.expiryMinutes <= 60 ? `${product.expiryMinutes}분` : `${Math.floor(product.expiryMinutes/60)}시간+`}
+                  ⏰ {remainingMinutes <= 60 ? `${remainingMinutes}분` : `${Math.floor(remainingMinutes/60)}시간+`}
                 </div>
               </div>
               <div>

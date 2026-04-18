@@ -5,6 +5,7 @@ import { MenuList } from '../components/SharedComponents';
 interface StoreInfo {
   name: string;
   address: string | null;
+  addressDetail: string | null;
 }
 
 /**
@@ -27,7 +28,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
       .then(res => res.json())
       .then(stores => {
         if (stores && stores.length > 0) {
-          setStoreInfo({ name: stores[0].name, address: stores[0].address ?? null });
+          setStoreInfo({ name: stores[0].name, address: stores[0].address ?? null, addressDetail: stores[0].address_detail ?? null });
         }
       })
       .catch(console.error);
@@ -38,6 +39,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
   if (userRole === 'SELLER') {
     const storeName = storeInfo?.name || '내 가게';
     const storeAddress = storeInfo?.address || null;
+    const storeAddressDetail = storeInfo?.addressDetail || null;
 
     return (
       <div className="flex flex-col bg-gray-50 min-h-full">
@@ -54,7 +56,9 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
                 <span className="font-extrabold text-xl">{displayName} 사장님</span>
                 <span className="text-gray-700 text-sm font-bold mt-0.5">{storeName}</span>
                 {storeAddress && (
-                  <span className="text-gray-400 text-xs mt-0.5">{storeAddress}</span>
+                  <span className="text-gray-400 text-xs mt-0.5">
+                    {storeAddress}{storeAddressDetail && ` ${storeAddressDetail}`}
+                  </span>
                 )}
               </div>
             </div>

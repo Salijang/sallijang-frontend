@@ -19,7 +19,22 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
   const [pickupExpectedAt, setPickupExpectedAt] = useState("20:00");
 
   React.useEffect(() => {
-    fetch(`http://localhost:8001/api/v1/products/${productId}`)
+    const params = new URLSearchParams();
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          params.append('user_lat', pos.coords.latitude.toString());
+          params.append('user_lng', pos.coords.longitude.toString());
+          doFetch(params);
+        },
+        () => doFetch(params)
+      );
+    } else {
+      doFetch(params);
+    }
+
+    function doFetch(p: URLSearchParams) {
+      fetch(`http://localhost:8001/api/v1/products/${productId}${p.toString() ? '?' + p.toString() : ''}`)
       .then(res => res.json())
       .then(data => {
         const p: Product = {
@@ -38,6 +53,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
           distance: data.distance,
           storeId: data.store_id,
           storeAddress: data.store_address,
+          storeAddressDetail: data.store_address_detail ?? undefined,
           pickupDeadline: data.pickup_deadline,
         };
         setProduct(p);
@@ -60,6 +76,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
         setPickupExpectedAt(defaultTime);
       })
       .catch(console.error);
+    }
   }, [productId]);
 
   /**
@@ -193,7 +210,11 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
                   {product.shopName}
                   {product.rating && <span className="text-base font-bold text-yellow-500 ml-1">⭐ {product.rating}</span>}
                 </div>
-                <div className="text-gray-500 text-base mt-2">{product.storeAddress || '주소 정보 없음'}{product.distance ? ` (${product.distance})` : ''}</div>
+                <div className="text-gray-500 text-base mt-2">
+                  {product.storeAddress || '주소 정보 없음'}
+                  {product.storeAddressDetail && <span> {product.storeAddressDetail}</span>}
+                  {product.distance ? ` (${product.distance})` : ''}
+                </div>
                 <div className="text-blue-600 font-bold text-base mt-1">{deadlineLabel}</div>
               </div>
               <button className="px-6 py-3 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors">
@@ -309,7 +330,11 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
               {product.shopName}
               {product.rating && <span className="text-sm font-bold text-yellow-500 ml-1">⭐ {product.rating}</span>}
             </div>
-            <div className="text-gray-500 text-sm mt-1">{product.storeAddress || '주소 정보 없음'}{product.distance ? ` (${product.distance})` : ''}</div>
+            <div className="text-gray-500 text-sm mt-1">
+              {product.storeAddress || '주소 정보 없음'}
+              {product.storeAddressDetail && <span> {product.storeAddressDetail}</span>}
+              {product.distance ? ` (${product.distance})` : ''}
+            </div>
             <div className="text-blue-600 font-bold text-sm mt-1">{deadlineLabel}</div>
           </div>
           <div className="w-full h-24 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 font-bold">

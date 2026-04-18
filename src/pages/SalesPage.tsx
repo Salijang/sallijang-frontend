@@ -26,7 +26,8 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
               weight: d.weight,
               description: d.description,
               shopName: d.shop_name || "내 가게",
-              distance: d.distance || "500m"
+              distance: d.distance || "500m",
+              pickupDeadline: d.pickup_deadline ?? undefined,
             }));
             setProducts(mapped);
         })
@@ -81,6 +82,28 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
     }
   };
 
+  const nowStr = new Date().toISOString().slice(0, 16);
+  const isExpired = (p: Product) =>
+    !!p.pickupDeadline && p.pickupDeadline.length > 5 && p.pickupDeadline < nowStr;
+
+  const sortedProducts = [...products].sort((a, b) => {
+    const aExp = isExpired(a) ? 1 : 0;
+    const bExp = isExpired(b) ? 1 : 0;
+    if (aExp !== bExp) return aExp - bExp;
+    return b.id - a.id; // 같은 그룹 내에서는 최신(높은 id) 순
+  });
+
+  const formatDeadline = (deadline: string): string => {
+    const date = new Date(deadline);
+    const mo = date.getMonth() + 1;
+    const d = date.getDate();
+    const h = date.getHours();
+    const m = date.getMinutes();
+    const period = h < 12 ? '오전' : '오후';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${mo}/${d} ${period} ${h12}시${m > 0 ? ` ${m}분` : ''}`;
+  };
+
   return (
     <div className="flex flex-col min-h-full bg-gray-50 pb-20">
       <header className="bg-white p-4 border-b border-gray-100 sticky top-0 z-10 flex items-center shadow-sm">
@@ -88,18 +111,33 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
         <h1 className="flex-1 text-lg font-bold text-center pr-8">판매 상품 관리</h1>
       </header>
       <div className="p-4 flex flex-col gap-3">
-        {products.map(p => (
-           <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
-             <div className="w-16 h-16 bg-[#FFFBE6] rounded-xl shrink-0 overflow-hidden border border-yellow-100">
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+        {sortedProducts.map(p => {
+          const expired = isExpired(p);
+          return (
+           <div key={p.id} className={`bg-white p-4 rounded-2xl shadow-sm border flex gap-4 items-center ${expired ? 'border-gray-200 opacity-60' : 'border-gray-100'}`}>
+             <div className="w-16 h-16 bg-[#FFFBE6] rounded-xl shrink-0 overflow-hidden border border-yellow-100 relative">
+                <img src={p.imageUrl} alt={p.name} className={`w-full h-full object-cover ${expired ? 'grayscale' : ''}`} />
+                {expired && (
+                  <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center">
+                    <span className="text-white text-[9px] font-black text-center leading-tight">기한<br/>지남</span>
+                  </div>
+                )}
              </div>
              <div className="flex-1 flex flex-col justify-center gap-0.5">
-                <div className="font-bold text-gray-900 text-[15px]">{p.name} <span className="text-xs text-gray-400 font-normal ml-0.5">{p.weight && `(${p.weight})`}</span></div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-900 text-[15px]">{p.name} <span className="text-xs text-gray-400 font-normal ml-0.5">{p.weight && `(${p.weight})`}</span></span>
+                  {expired && <span className="text-[10px] font-black text-white bg-gray-500 px-1.5 py-0.5 rounded shrink-0">기한 지남</span>}
+                </div>
                 <div className="text-[14px] font-extrabold text-red-500">{p.discountPrice.toLocaleString()}원 <span className="text-[11px] text-gray-400 line-through font-normal ml-1 pr-1">{p.originalPrice.toLocaleString()}원</span></div>
                 <div className="text-[11px] text-gray-500 font-bold mt-0.5">남은 수량: <span className="text-blue-600 font-extrabold">{p.remaining}개</span> / 총 {p.totalQuantity}개</div>
+                {p.pickupDeadline && (
+                  <div className={`text-[11px] font-bold mt-0.5 ${expired ? 'text-gray-400' : 'text-orange-500'}`}>
+                    마감: {formatDeadline(p.pickupDeadline)}
+                  </div>
+                )}
              </div>
              <div className="flex flex-col gap-1.5 shrink-0">
-               <button onClick={() => setEditingProduct(p)} className="px-3 py-1.5 bg-gray-100/80 border border-gray-200 text-gray-700 font-bold rounded-lg text-xs hover:bg-gray-200 active:scale-95 transition-transform w-[72px]">
+               <button onClick={() => setEditingProduct(p)} disabled={expired} className="px-3 py-1.5 bg-gray-100/80 border border-gray-200 text-gray-700 font-bold rounded-lg text-xs hover:bg-gray-200 active:scale-95 transition-transform w-[72px] disabled:opacity-40 disabled:cursor-not-allowed">
                  수정하기
                </button>
                <button onClick={() => handleDelete(p.id)} className="px-3 py-1.5 bg-red-50 border border-red-100 text-red-500 font-bold rounded-lg text-xs hover:bg-red-100 active:scale-95 transition-transform w-[72px]">
@@ -107,7 +145,8 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
                </button>
              </div>
            </div>
-        ))}
+          );
+        })}
         <button onClick={() => onNavigate('register')} className="w-full mt-3 py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold flex justify-center items-center gap-2 hover:bg-gray-50 active:scale-95 transition-all">
           <span className="text-xl">➕</span> 새 마감 특가 등록하기
         </button>

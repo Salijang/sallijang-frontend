@@ -29,29 +29,39 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
 
   // productId → 실제 남은 수량 (재고 부족 시에만 기록)
   const [stockErrors, setStockErrors] = useState<Map<number, number>>(new Map());
+  // productId → 마감 시간 초과 여부
+  const [deadlineErrors, setDeadlineErrors] = useState<Set<number>>(new Set());
 
   const handleOrder = useCallback(async (shopName: string, entries: CartEntry[]) => {
-    // 각 상품의 현재 재고를 병렬로 조회
     const results = await Promise.all(
       entries.map(e =>
         fetch(`http://localhost:8001/api/v1/products/${e.product.id}`)
           .then(r => r.ok ? r.json() : null)
-          .then(data => ({ id: e.product.id, remaining: data?.remaining ?? 0, quantity: e.quantity }))
-          .catch(() => ({ id: e.product.id, remaining: 0, quantity: e.quantity }))
+          .then(data => ({
+            id: e.product.id,
+            remaining: data?.remaining ?? 0,
+            quantity: e.quantity,
+            pickupDeadline: data?.pickup_deadline ?? null,
+          }))
+          .catch(() => ({ id: e.product.id, remaining: 0, quantity: e.quantity, pickupDeadline: null }))
       )
     );
 
-    const errors = new Map<number, number>();
+    const now = new Date();
+    const stockErrs = new Map<number, number>();
+    const deadlineErrs = new Set<number>();
+
     for (const r of results) {
-      if (r.remaining < r.quantity) errors.set(r.id, r.remaining);
+      if (r.remaining < r.quantity) stockErrs.set(r.id, r.remaining);
+      if (r.pickupDeadline && r.pickupDeadline.includes('-') && new Date(r.pickupDeadline) <= now)
+        deadlineErrs.add(r.id);
     }
 
-    if (errors.size > 0) {
-      setStockErrors(errors);
-      return;
-    }
+    setStockErrors(stockErrs);
+    setDeadlineErrors(deadlineErrs);
 
-    setStockErrors(new Map());
+    if (stockErrs.size > 0 || deadlineErrs.size > 0) return;
+
     onOrder(shopName, entries);
   }, [onOrder]);
 
@@ -144,13 +154,17 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
                         {/* 상품명 + 삭제 */}
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col flex-1 pr-2">
-                            <span className="font-bold text-[15px] text-gray-900 leading-snug">{product.name}
-                              {stockErrors.has(product.id) && (
-                                <span className="text-red-500 text-xs font-bold ml-2">
-                                  {stockErrors.get(product.id)}개 남았습니다
-                                </span>
-                              )}
-                            </span>
+                            <span className="font-bold text-[15px] text-gray-900 leading-snug">{product.name}</span>
+                            {stockErrors.has(product.id) && (
+                              <span className="text-red-500 text-xs font-bold mt-0.5">
+                                {stockErrors.get(product.id)}개 남았습니다
+                              </span>
+                            )}
+                            {deadlineErrors.has(product.id) && (
+                              <span className="text-red-500 text-xs font-bold mt-0.5">
+                                예약 마감이 지난 상품입니다
+                              </span>
+                            )}
                           </div>
                           <button
                             onClick={() => onRemove(product.id)}
