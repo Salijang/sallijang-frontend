@@ -1,11 +1,10 @@
 import { useState } from 'react';
+import { useNotifications, NotificationDrawer } from '../components/SharedComponents';
 
-/**
- * 판매자 전용 홈 데시보드.
- * 매출액, 요약 등 판매자의 전반적 활동을 요약합니다.
- */
-export function SellerHomePage({ isPcVersion, userName }: { isPcVersion?: boolean; userName?: string }) {
+export function SellerHomePage({ isPcVersion, userName, userId }: { isPcVersion?: boolean; userName?: string; userId?: number | null }) {
   const [noticeExpanded, setNoticeExpanded] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
+  const { unreadCount } = useNotifications(userId ?? null, 5_000);
 
   const notices = [
     { title: "[안내] 2024년 11월 정산 주기 및 대금 지급일 안내", date: "2024. 11. 15", content: "이번 달 정산은 25일에 일괄 진행될 예정입니다. 계좌 정보를 다시 한번 확인해주세요." },
@@ -24,8 +23,18 @@ export function SellerHomePage({ isPcVersion, userName }: { isPcVersion?: boolea
         <div className={`flex items-center gap-1 font-black text-xl tracking-tight text-gray-900 absolute left-1/2 -translate-x-1/2 ${isPcVersion ? 'static translate-x-0 mx-auto' : ''}`}>
           살리장셀프서비스 <span className="text-[22px] ml-0.5">🥜</span>
         </div>
-        {!isPcVersion && <div className="w-8"></div>}
+        {!isPcVersion && (
+          <div className="relative cursor-pointer" onClick={() => setShowNotif(true)}>
+            <span className="text-xl">🔔</span>
+            {unreadCount > 0 && (
+              <div className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full border border-gray-50 flex items-center justify-center">
+                <span className="text-[9px] font-black text-white leading-none px-0.5">{unreadCount}</span>
+              </div>
+            )}
+          </div>
+        )}
       </header>
+      <NotificationDrawer userId={userId ?? null} isOpen={showNotif} onClose={() => setShowNotif(false)} />
 
       <div className="px-5 py-2 flex flex-col gap-5">
         <div className="mt-1">

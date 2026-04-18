@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page, CartEntry, OrderResult, Product } from './types';
 import { DUMMY_PRODUCTS } from './data';
-import { BottomTabBar, PcGnb } from './components/SharedComponents';
+import { BottomTabBar, PcGnb, usePendingOrderCount } from './components/SharedComponents';
 
 // 개별 페이지 Import
 import { LoginPage } from './pages/LoginPage';
@@ -119,6 +119,9 @@ export default function App() {
   // ── 장바구니 아이콘 뱃지 개수 ──────────────────────
   const cartCount = cart.reduce((s, e) => s + e.quantity, 0);
 
+  // ── 판매자: 처리중 주문 수 (예약 탭 배지용) ────────
+  const pendingOrderCount = usePendingOrderCount(userRole === 'SELLER' ? storeId : null);
+
   // PC 버전 UI
   if (isPcVersion) {
     return (
@@ -127,13 +130,13 @@ export default function App() {
         <main className={`max-w-[1200px] w-full mx-auto ${currentPage !== 'login' && currentPage !== 'signup' ? 'pt-24' : ''}`}>
            {currentPage === 'login' && <LoginPage onLogin={(role, uid, sid, name) => { setUserRole(role); if (uid) setUserId(uid); if (sid) setStoreId(sid); if (name) setUserName(name); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
            {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
-           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} />}
+           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} userId={userId} />}
            {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
 
            {/* Wrap mobile-focused pages in a PC card */}
            {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy'].includes(currentPage) && (
              <div className="max-w-3xl mx-auto bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 min-h-[600px] mt-8">
-               {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} />}
+               {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} />}
                {currentPage === 'payment' && (
                  cartOrderEntries.length > 0
                    ? <PaymentPage cartEntries={cartOrderEntries} cartShopName={cartOrderShopName} buyerId={userId} onBack={() => { setCartOrderEntries([]); navigateTo('cart'); }} onComplete={handlePaymentComplete} />
@@ -141,7 +144,7 @@ export default function App() {
                )}
                {currentPage === 'complete' && <CompletePage onNavigate={navigateTo} product={selectedProduct} orderResult={orderResult} />}
                {currentPage === 'reservations' && <ReservationsPage userRole={userRole} buyerId={userId} storeId={storeId} />}
-               {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userId} />}
+               {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userRole === 'USER' ? userId : null} storeId={userRole === 'SELLER' ? storeId : null} />}
                {currentPage === 'register' && <RegisterPage onNavigate={navigateTo} storeId={storeId} />}
                {currentPage === 'my' && <MyPage onNavigate={navigateTo} userRole={userRole} userId={userId} storeId={storeId} userName={userName} />}
                {currentPage === 'wishlist' && <WishlistPage />}
@@ -172,8 +175,8 @@ export default function App() {
         <div className={`flex-1 overflow-y-auto ${currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'cart' ? 'pb-20' : ''}`}>
           {currentPage === 'login' && <LoginPage onLogin={(role, uid, sid, name) => { setUserRole(role); if (uid) setUserId(uid); if (sid) setStoreId(sid); if (name) setUserName(name); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
           {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
-          {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} />}
-          {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} />}
+          {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} userId={userId} />}
+          {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} />}
           {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
           {currentPage === 'payment' && (
             cartOrderEntries.length > 0
@@ -182,7 +185,7 @@ export default function App() {
           )}
           {currentPage === 'complete' && <CompletePage onNavigate={navigateTo} product={selectedProduct} orderResult={orderResult} />}
           {currentPage === 'reservations' && <ReservationsPage userRole={userRole} buyerId={userId} storeId={storeId} />}
-          {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userId} />}
+          {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userRole === 'USER' ? userId : null} storeId={userRole === 'SELLER' ? storeId : null} />}
           {currentPage === 'register' && <RegisterPage onNavigate={navigateTo} storeId={storeId} />}
           {currentPage === 'my' && <MyPage onNavigate={navigateTo} userRole={userRole} userId={userId} storeId={storeId} userName={userName} />}
           {currentPage === 'wishlist' && <WishlistPage />}
@@ -197,7 +200,7 @@ export default function App() {
 
         {/* Bottom Tab Bar */}
         {currentPage !== 'detail' && currentPage !== 'payment' && currentPage !== 'complete' && currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'cart' && currentPage !== 'customer_center' && currentPage !== 'notification_settings' && currentPage !== 'terms_policy' && (
-          <BottomTabBar currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} isPcVersion={isPcVersion} />
+          <BottomTabBar currentPage={currentPage} onNavigate={navigateTo} userRole={userRole} isPcVersion={isPcVersion} pendingOrderCount={pendingOrderCount} />
         )}
 
       </div>

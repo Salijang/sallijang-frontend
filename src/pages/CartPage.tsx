@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import type { Page, CartEntry } from '../types';
 
 /**
@@ -26,6 +26,34 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
 
   // 체크된 가게 목록
   const [checkedShops, setCheckedShops] = useState<string[]>([]);
+
+  // productId → 실제 남은 수량 (재고 부족 시에만 기록)
+  const [stockErrors, setStockErrors] = useState<Map<number, number>>(new Map());
+
+  const handleOrder = useCallback(async (shopName: string, entries: CartEntry[]) => {
+    // 각 상품의 현재 재고를 병렬로 조회
+    const results = await Promise.all(
+      entries.map(e =>
+        fetch(`http://localhost:8001/api/v1/products/${e.product.id}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => ({ id: e.product.id, remaining: data?.remaining ?? 0, quantity: e.quantity }))
+          .catch(() => ({ id: e.product.id, remaining: 0, quantity: e.quantity }))
+      )
+    );
+
+    const errors = new Map<number, number>();
+    for (const r of results) {
+      if (r.remaining < r.quantity) errors.set(r.id, r.remaining);
+    }
+
+    if (errors.size > 0) {
+      setStockErrors(errors);
+      return;
+    }
+
+    setStockErrors(new Map());
+    onOrder(shopName, entries);
+  }, [onOrder]);
 
   // 새 가게가 추가되면 자동 체크
   useEffect(() => {
@@ -115,10 +143,18 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
                       <div key={product.id} className="flex flex-col gap-3">
                         {/* 상품명 + 삭제 */}
                         <div className="flex justify-between items-start">
-                          <span className="font-bold text-[15px] text-gray-900 leading-snug flex-1 pr-2">{product.name}</span>
+                          <div className="flex flex-col flex-1 pr-2">
+                            <span className="font-bold text-[15px] text-gray-900 leading-snug">{product.name}
+                              {stockErrors.has(product.id) && (
+                                <span className="text-red-500 text-xs font-bold ml-2">
+                                  {stockErrors.get(product.id)}개 남았습니다
+                                </span>
+                              )}
+                            </span>
+                          </div>
                           <button
                             onClick={() => onRemove(product.id)}
-                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors shrink-0"
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors shrink-0 mt-0.5"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -192,7 +228,7 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
                 <div className="px-5 pb-5">
                   <button
                     disabled={!isChecked}
-                    onClick={() => isChecked && onOrder(group.shopName, group.entries)}
+                    onClick={() => isChecked && handleOrder(group.shopName, group.entries)}
                     className={`w-full font-extrabold py-4 rounded-xl text-[16px] transition-all active:scale-95 ${
                       isChecked
                         ? 'bg-[#FFE400] text-black hover:bg-yellow-400 shadow-sm'

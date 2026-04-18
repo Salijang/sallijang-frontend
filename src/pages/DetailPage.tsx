@@ -81,40 +81,14 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
     return `${datePart}${period} ${hour12}시${m > 0 ? ` ${m}분` : ''}`;
   };
 
-  /** 구매자가 선택한 HH:MM 시간이 마감 시간을 초과하는지 확인 */
-  const isAfterDeadline = (hhMM: string): boolean => {
-    if (!product?.pickupDeadline) return false;
-    const [h, m] = hhMM.split(':').map(Number);
-    const today = new Date();
-    const pickupDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
-    const deadlineDate = product.pickupDeadline.includes('T')
-      ? new Date(product.pickupDeadline)
-      : (() => { const [dh, dm] = product.pickupDeadline!.split(':').map(Number); return new Date(today.getFullYear(), today.getMonth(), today.getDate(), dh, dm); })();
-    return pickupDate > deadlineDate;
-  };
-
-  /** 예약 버튼 클릭 — 안전망 검증 후 진행 */
-  const handleReserve = () => {
-    if (isAfterDeadline(pickupExpectedAt)) return;
-    onReserve(quantity, product!, pickupExpectedAt);
-  };
-
-  if (!product) return <div className="p-10 flex justify-center text-gray-500 font-bold">로딩 중...</div>;
-  const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
-  const targetTime = new Date(now.getTime() + product.expiryMinutes * 60 * 1000 - (now.getTime() % 1000));
-
-  const deadlineLabel = product.pickupDeadline
-    ? `${formatDeadline(product.pickupDeadline)}까지 픽업`
-    : '오늘 내 픽업 가능';
-
-  const deadlineTimeMax = product.pickupDeadline
+  // useEffect 전에 슬롯을 계산해야 Rules of Hooks 준수 가능
+  const deadlineTimeMax = product?.pickupDeadline
     ? (product.pickupDeadline.includes('T')
         ? product.pickupDeadline.split('T')[1].slice(0, 5)
         : product.pickupDeadline.slice(0, 5))
     : undefined;
   const currentTimeMin = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  /** 현재 시간 ~ 마감 시간 범위의 30분 간격 슬롯 목록 */
   const timeSlots: string[] = (() => {
     const slots: string[] = [];
     const [minH, minM] = currentTimeMin.split(':').map(Number);
@@ -129,6 +103,27 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
     }
     return slots;
   })();
+
+  const firstSlot = timeSlots[0] ?? '';
+  React.useEffect(() => {
+    if (!product) return;
+    if (firstSlot && !timeSlots.includes(pickupExpectedAt)) {
+      setPickupExpectedAt(firstSlot);
+    }
+  }, [firstSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!product) return <div className="p-10 flex justify-center text-gray-500 font-bold">로딩 중...</div>;
+
+  const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
+  const targetTime = new Date(now.getTime() + product.expiryMinutes * 60 * 1000 - (now.getTime() % 1000));
+  const deadlineLabel = product.pickupDeadline
+    ? `${formatDeadline(product.pickupDeadline)}까지 픽업`
+    : '오늘 내 픽업 가능';
+
+  const canReserve = timeSlots.length > 0;
+  const handleReserve = () => {
+    onReserve(quantity, product, pickupExpectedAt);
+  };
 
   const formatSlotLabel = (hhMM: string): string => {
     const [h, m] = hhMM.split(':').map(Number);
@@ -248,9 +243,10 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
               </button>
               <button
                 onClick={handleReserve}
-                className="flex-1 bg-[#FFE400] text-black font-extrabold text-lg py-5 rounded-2xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-md"
+                disabled={!canReserve}
+                className={`flex-1 font-extrabold text-lg py-5 rounded-2xl transition-transform shadow-md ${canReserve ? 'bg-[#FFE400] text-black hover:bg-yellow-400 active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               >
-                바로 픽업 예약하기
+                {canReserve ? '바로 픽업 예약하기' : '예약 마감됨'}
               </button>
             </div>
           </div>
@@ -367,9 +363,10 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
         </button>
         <button
           onClick={handleReserve}
-          className="flex-[2] bg-[#FFE400] text-black font-extrabold text-base py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm"
+          disabled={!canReserve}
+          className={`flex-[2] font-extrabold text-base py-4 rounded-xl transition-transform shadow-sm ${canReserve ? 'bg-[#FFE400] text-black hover:bg-yellow-400 active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
         >
-          바로 픽업 예약하기 — {(product.discountPrice * quantity).toLocaleString()}원
+          {canReserve ? `바로 픽업 예약하기 — ${(product.discountPrice * quantity).toLocaleString()}원` : '예약 마감됨'}
         </button>
       </div>
     </div>

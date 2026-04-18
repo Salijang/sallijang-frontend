@@ -80,7 +80,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
 
           <div className="bg-white pt-2 border-y border-gray-100 shadow-sm">
             <MenuList title="가게 관리" items={[
-              { label: '상품 등록/관리', icon: '📝', onClick: () => onNavigate('sales') },
+              { label: '주문 내역', icon: '🧾', onClick: () => onNavigate('history') },
               { label: '리뷰 관리', icon: '⭐', onClick: () => onNavigate('reviews') },
               { label: '정산 내역', icon: '💰' },
             ]} />

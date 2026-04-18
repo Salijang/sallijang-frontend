@@ -83,7 +83,8 @@ export function ReservationsPage({
   const handleCancel = async (orderId: number) => {
     if (!window.confirm('정말 취소하겠습니까?')) return;
     try {
-      const res = await fetch(`http://localhost:8002/api/v1/orders/${orderId}`, {
+      const cancelledBy = userRole === 'SELLER' ? 'seller' : 'buyer';
+      const res = await fetch(`http://localhost:8002/api/v1/orders/${orderId}?cancelled_by=${cancelledBy}`, {
         method: 'DELETE',
       });
       if (res.ok) {
