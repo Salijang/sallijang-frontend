@@ -162,7 +162,7 @@ function EditProductView({ product, onSave, onCancel }: { product: Product, onSa
   const [name, setName] = useState(product.name);
   const [price, setPrice] = useState(product.originalPrice);
   const [discountPrice, setDiscountPrice] = useState(product.discountPrice);
-  const [quantity, setQuantity] = useState(product.totalQuantity);
+  const [quantity, _setQuantity] = useState(product.totalQuantity);
   const [remaining, setRemaining] = useState(product.remaining);
 
   return (
