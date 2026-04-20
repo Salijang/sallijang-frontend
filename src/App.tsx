@@ -39,6 +39,7 @@ export default function App() {
   const [storeId, setStoreId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [targetMapStore, setTargetMapStore] = useState<{ lat: number; lng: number; storeId: number } | null>(null);
 
   // ── 장바구니 상태 ──────────────────────────────────────
   const [cart, setCart] = useState<CartEntry[]>([]);
@@ -86,6 +87,12 @@ export default function App() {
   const navigateTo = (page: Page, productId?: number) => {
     setCurrentPage(page);
     if (productId) setSelectedProductId(productId);
+    if (page !== 'map') setTargetMapStore(null);
+  };
+
+  const navigateToMapWithStore = (target: { lat: number; lng: number; storeId: number }) => {
+    setTargetMapStore(target);
+    setCurrentPage('map');
   };
 
   const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
@@ -131,12 +138,12 @@ export default function App() {
            {currentPage === 'login' && <LoginPage onLogin={(role, uid, sid, name) => { setUserRole(role); if (uid) setUserId(uid); if (sid) setStoreId(sid); if (name) setUserName(name); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
            {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
            {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} userId={userId} />}
-           {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
+           {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} userId={userId} />}
 
            {/* Wrap mobile-focused pages in a PC card */}
            {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy'].includes(currentPage) && (
              <div className="max-w-3xl mx-auto bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 min-h-[600px] mt-8">
-               {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} />}
+               {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} storeId={storeId} />}
                {currentPage === 'payment' && (
                  cartOrderEntries.length > 0
                    ? <PaymentPage cartEntries={cartOrderEntries} cartShopName={cartOrderShopName} buyerId={userId} onBack={() => { setCartOrderEntries([]); navigateTo('cart'); }} onComplete={handlePaymentComplete} />
@@ -147,9 +154,9 @@ export default function App() {
                {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userRole === 'USER' ? userId : null} storeId={userRole === 'SELLER' ? storeId : null} />}
                {currentPage === 'register' && <RegisterPage onNavigate={navigateTo} storeId={storeId} />}
                {currentPage === 'my' && <MyPage onNavigate={navigateTo} userRole={userRole} userId={userId} storeId={storeId} userName={userName} />}
-               {currentPage === 'wishlist' && <WishlistPage />}
+               {currentPage === 'wishlist' && <WishlistPage userId={userId} onNavigateToMap={navigateToMapWithStore} onBack={() => navigateTo('my')} />}
                {currentPage === 'sales' && <SalesPage onNavigate={navigateTo} storeId={storeId} />}
-               {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} />}
+               {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} buyerId={userId} storeId={storeId} />}
                {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateCartQuantity} />}
                {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
                {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
@@ -158,7 +165,7 @@ export default function App() {
            )}
            {currentPage === 'map' && (
              <div className="max-w-3xl mx-auto bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 min-h-[600px] mt-8 relative" style={{ height: "600px" }}>
-                <MapPage onNavigate={(p, id) => navigateTo(p as Page, id)} />
+                <MapPage onNavigate={(p, id) => navigateTo(p as Page, id)} targetStore={targetMapStore} />
              </div>
            )}
         </main>
@@ -176,8 +183,8 @@ export default function App() {
           {currentPage === 'login' && <LoginPage onLogin={(role, uid, sid, name) => { setUserRole(role); if (uid) setUserId(uid); if (sid) setStoreId(sid); if (name) setUserName(name); navigateTo(role === 'SELLER' ? 'seller_home' : 'home'); }} isPcVersion={isPcVersion} onSetPcVersion={setIsPcVersion} onNavigate={navigateTo} />}
           {currentPage === 'signup' && <SignupPage onNavigate={navigateTo} />}
           {currentPage === 'home' && <HomePage onNavigate={(p: number) => navigateTo('detail', p)} onNavigateToCart={() => navigateTo('cart')} cartCount={cartCount} now={now} isPcVersion={isPcVersion} userId={userId} />}
-          {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} />}
-          {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} />}
+          {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} storeId={storeId} />}
+          {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} userId={userId} />}
           {currentPage === 'payment' && (
             cartOrderEntries.length > 0
               ? <PaymentPage cartEntries={cartOrderEntries} cartShopName={cartOrderShopName} buyerId={userId} onBack={() => { setCartOrderEntries([]); navigateTo('cart'); }} onComplete={handlePaymentComplete} />
@@ -188,14 +195,14 @@ export default function App() {
           {currentPage === 'history' && <HistoryPage onNavigate={navigateTo} buyerId={userRole === 'USER' ? userId : null} storeId={userRole === 'SELLER' ? storeId : null} />}
           {currentPage === 'register' && <RegisterPage onNavigate={navigateTo} storeId={storeId} />}
           {currentPage === 'my' && <MyPage onNavigate={navigateTo} userRole={userRole} userId={userId} storeId={storeId} userName={userName} />}
-          {currentPage === 'wishlist' && <WishlistPage />}
+          {currentPage === 'wishlist' && <WishlistPage userId={userId} onNavigateToMap={navigateToMapWithStore} onBack={() => navigateTo('my')} />}
           {currentPage === 'sales' && <SalesPage onNavigate={navigateTo} storeId={storeId} />}
-          {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} />}
+          {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} buyerId={userId} storeId={storeId} />}
           {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateCartQuantity} />}
           {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
           {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
           {currentPage === 'terms_policy' && <TermsPolicyPage onNavigate={navigateTo} />}
-          {currentPage === 'map' && <MapPage onNavigate={(p, id) => navigateTo(p as any, id)} />}
+          {currentPage === 'map' && <MapPage onNavigate={(p, id) => navigateTo(p as any, id)} targetStore={targetMapStore} />}
         </div>
 
         {/* Bottom Tab Bar */}

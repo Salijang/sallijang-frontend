@@ -1,10 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNotifications, NotificationDrawer } from '../components/SharedComponents';
 
-export function SellerHomePage({ isPcVersion, userName, userId }: { isPcVersion?: boolean; userName?: string; userId?: number | null }) {
+interface SalesStats {
+  today_revenue: number;
+  today_count: number;
+  yesterday_revenue: number;
+  yesterday_count: number;
+}
+
+export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isPcVersion?: boolean; userName?: string; userId?: number | null; storeId?: number | null }) {
   const [noticeExpanded, setNoticeExpanded] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
+  const [stats, setStats] = useState<SalesStats | null>(null);
   const { unreadCount } = useNotifications(userId ?? null, 5_000);
+
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`http://localhost:8002/api/v1/orders/stats?store_id=${storeId}`)
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch(console.error);
+  }, [storeId]);
 
   const notices = [
     { title: "[안내] 2024년 11월 정산 주기 및 대금 지급일 안내", date: "2024. 11. 15", content: "이번 달 정산은 25일에 일괄 진행될 예정입니다. 계좌 정보를 다시 한번 확인해주세요." },
@@ -46,24 +62,45 @@ export function SellerHomePage({ isPcVersion, userName, userId }: { isPcVersion?
           <h2 className="text-[21px] font-black text-gray-900 tracking-tight leading-snug">{userName || '사장'}님을 언제나 응원해요!</h2>
         </div>
 
-        {/* ... (Existing sales stats and pause toggle remain unchanged) ... */}
         <div className="grid grid-cols-2 gap-3 mt-2">
           <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100/80 cursor-pointer transition-shadow">
             <div className="text-gray-600 font-bold mb-2.5 text-sm">오늘 판매금액</div>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-extrabold text-[19px] text-gray-900">120,500원</span>
+              <span className="font-extrabold text-[19px] text-gray-900">
+                {stats ? `${stats.today_revenue.toLocaleString()}원` : '-'}
+              </span>
               <span className="text-gray-400 font-light text-xl -mt-1">›</span>
             </div>
-            <div className="text-emerald-500 font-extrabold text-[13px] tracking-tight">어제보다 + 14,000원</div>
+            {stats && (() => {
+              const diff = stats.today_revenue - stats.yesterday_revenue;
+              if (diff === 0) return <div className="text-gray-400 font-bold text-[13px] tracking-tight">어제와 동일</div>;
+              return (
+                <div className={`font-extrabold text-[13px] tracking-tight ${diff > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                  어제보다 {diff > 0 ? '+' : ''}{diff.toLocaleString()}원
+                </div>
+              );
+            })()}
+            {!stats && <div className="text-gray-300 font-bold text-[13px]">데이터 로딩 중</div>}
           </div>
-          
+
           <div className="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-100/80 cursor-pointer transition-shadow">
             <div className="text-gray-600 font-bold mb-2.5 text-sm">오늘 판매수</div>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-extrabold text-[19px] text-gray-900">8건</span>
+              <span className="font-extrabold text-[19px] text-gray-900">
+                {stats ? `${stats.today_count}건` : '-'}
+              </span>
               <span className="text-gray-400 font-light text-xl -mt-1">›</span>
             </div>
-            <div className="text-emerald-500 font-extrabold text-[13px] tracking-tight">어제보다 + 2건</div>
+            {stats && (() => {
+              const diff = stats.today_count - stats.yesterday_count;
+              if (diff === 0) return <div className="text-gray-400 font-bold text-[13px] tracking-tight">어제와 동일</div>;
+              return (
+                <div className={`font-extrabold text-[13px] tracking-tight ${diff > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                  어제보다 {diff > 0 ? '+' : ''}{diff}건
+                </div>
+              );
+            })()}
+            {!stats && <div className="text-gray-300 font-bold text-[13px]">데이터 로딩 중</div>}
           </div>
         </div>
 

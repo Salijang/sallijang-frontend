@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Product } from '../types';
 import { formatCountdown } from '../utils/timeUtils';
 
@@ -6,17 +6,20 @@ import { formatCountdown } from '../utils/timeUtils';
  * 특정 상품의 상세 정보를 확인하고 픽업 예약 수량을 설정하는 상세 페이지.
  * onReserve에 product를 함께 전달해 PaymentPage에 즉시 반영합니다.
  */
-export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isPcVersion }: {
+export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isPcVersion, userId }: {
   productId: number;
   onBack: () => void;
   onReserve: (qty: number, product: Product, pickupExpectedAt: string) => void;
   onAddToCart: (product: Product, quantity: number) => void;
   now: Date;
   isPcVersion?: boolean;
+  userId?: number | null;
 }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [pickupExpectedAt, setPickupExpectedAt] = useState("20:00");
+  const [wishlistItemId, setWishlistItemId] = useState<number | null>(null);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   React.useEffect(() => {
     const params = new URLSearchParams();
@@ -78,6 +81,40 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
       .catch(console.error);
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (!product?.storeId || !userId) return;
+    fetch(`http://localhost:8000/api/v1/wishlists?user_id=${userId}`)
+      .then(res => res.json())
+      .then((data: { id: number; store_id: number }[]) => {
+        const found = data.find(w => w.store_id === product.storeId);
+        setWishlistItemId(found?.id ?? null);
+      })
+      .catch(console.error);
+  }, [product?.storeId, userId]);
+
+  const toggleWishlist = async () => {
+    if (!product?.storeId || !userId || wishlistLoading) return;
+    setWishlistLoading(true);
+    try {
+      if (wishlistItemId !== null) {
+        const res = await fetch(`http://localhost:8000/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
+        if (res.ok) setWishlistItemId(null);
+      } else {
+        const res = await fetch('http://localhost:8000/api/v1/wishlists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, store_id: product.storeId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setWishlistItemId(data.id);
+        }
+      }
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   /**
    * "YYYY-MM-DDTHH:MM" 또는 "HH:MM" → "M월 D일 오전/오후 H시 M분" 형식으로 변환
@@ -160,6 +197,15 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
               <button onClick={onBack} className="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-xl font-bold z-10 shadow-sm hover:bg-white transition-colors">
                 ←
               </button>
+              {userId && (
+                <button
+                  onClick={toggleWishlist}
+                  disabled={wishlistLoading}
+                  className="absolute top-4 right-4 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-xl z-10 shadow-sm hover:bg-white transition-colors active:scale-95"
+                >
+                  {wishlistItemId !== null ? '❤️' : '🤍'}
+                </button>
+              )}
               <div className="absolute bottom-4 left-4 bg-red-500 text-white font-black text-3xl px-4 py-2 rounded-xl shadow-lg rotate-[-5deg]">
                 -{discountRate}%
               </div>
@@ -284,6 +330,15 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
         <button onClick={onBack} className="absolute top-4 left-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center text-xl font-bold z-10 shadow-sm">
           ←
         </button>
+        {userId && (
+          <button
+            onClick={toggleWishlist}
+            disabled={wishlistLoading}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center text-xl z-10 shadow-sm active:scale-95 transition-transform"
+          >
+            {wishlistItemId !== null ? '❤️' : '🤍'}
+          </button>
+        )}
         <div className="absolute bottom-4 left-4 bg-red-500 text-white font-black text-2xl px-3 py-1 rounded-lg shadow-lg rotate-[-5deg]">
           -{discountRate}%
         </div>

@@ -11,6 +11,7 @@ declare global {
 type ProductWithCoords = Product & { latitude?: number; longitude?: number };
 
 type StoreGroup = {
+  storeId: number;
   shopName: string;
   latitude: number;
   longitude: number;
@@ -18,20 +19,34 @@ type StoreGroup = {
   products: ProductWithCoords[];
 };
 
+type TargetStore = { lat: number; lng: number; storeId: number };
+
 function groupByStore(products: ProductWithCoords[]): StoreGroup[] {
-  const storeMap = new Map<string, StoreGroup>();
+  const storeMap = new Map<number, StoreGroup>();
   for (const p of products) {
-    if (!p.latitude || !p.longitude) continue;
-    const key = `${p.latitude},${p.longitude}`;
-    if (!storeMap.has(key)) {
-      storeMap.set(key, { shopName: p.shopName, latitude: p.latitude, longitude: p.longitude, distance: p.distance, products: [] });
+    if (!p.latitude || !p.longitude || !p.storeId) continue;
+    if (!storeMap.has(p.storeId)) {
+      storeMap.set(p.storeId, {
+        storeId: p.storeId,
+        shopName: p.shopName,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        distance: p.distance,
+        products: [],
+      });
     }
-    storeMap.get(key)!.products.push(p);
+    storeMap.get(p.storeId)!.products.push(p);
   }
   return Array.from(storeMap.values());
 }
 
-export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number) => void }) {
+export function MapPage({
+  onNavigate,
+  targetStore,
+}: {
+  onNavigate: (page: string, id?: number) => void;
+  targetStore?: TargetStore | null;
+}) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [isLocating, setIsLocating] = useState(true);
 
@@ -44,13 +59,18 @@ export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number
       window.kakao.maps.load(() => {
         if (!mapRef.current) return;
 
-        const center = new window.kakao.maps.LatLng(userLat, userLng);
-        const map = new window.kakao.maps.Map(mapRef.current, { center, level: 4 });
+        const centerLat = targetStore?.lat ?? userLat;
+        const centerLng = targetStore?.lng ?? userLng;
+        const center = new window.kakao.maps.LatLng(centerLat, centerLng);
+        const map = new window.kakao.maps.Map(mapRef.current, {
+          center,
+          level: targetStore ? 3 : 4,
+        });
 
         // 내 위치 (파란 점)
         new window.kakao.maps.CustomOverlay({
           map,
-          position: center,
+          position: new window.kakao.maps.LatLng(userLat, userLng),
           content: `<div style="width:18px;height:18px;background:#3B82F6;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
           xAnchor: 0.5,
           yAnchor: 0.5,
@@ -59,6 +79,7 @@ export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number
 
         const storeGroups = groupByStore(products);
         const allInfoWindows: any[] = [];
+        const storeMarkerMap = new Map<number, { marker: any; infoWindow: any }>();
 
         storeGroups.forEach((store) => {
           const pos = new window.kakao.maps.LatLng(store.latitude, store.longitude);
@@ -86,18 +107,30 @@ export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number
             </div>`,
             removable: true,
           });
+
           allInfoWindows.push(infoWindow);
+          storeMarkerMap.set(store.storeId, { marker, infoWindow });
 
           window.kakao.maps.event.addListener(marker, 'click', () => {
             allInfoWindows.forEach(iw => iw.close());
             infoWindow.open(map, marker);
           });
         });
+
+        // 찜 목록에서 이동한 경우 해당 가게 핀 자동 오픈
+        if (targetStore) {
+          const entry = storeMarkerMap.get(targetStore.storeId);
+          if (entry) {
+            entry.infoWindow.open(map, entry.marker);
+          }
+        }
       });
     };
 
-    const fetchAndBuild = (lat: number, lng: number) => {
-      fetch(`http://localhost:8001/api/v1/products/?user_lat=${lat}&user_lng=${lng}`)
+    const fetchAndBuild = (userLat: number, userLng: number) => {
+      const fetchLat = targetStore?.lat ?? userLat;
+      const fetchLng = targetStore?.lng ?? userLng;
+      fetch(`http://localhost:8001/api/v1/products/?user_lat=${fetchLat}&user_lng=${fetchLng}`)
         .then(res => res.json())
         .then(data => {
           const products: ProductWithCoords[] = data.map((d: any) => ({
@@ -105,9 +138,9 @@ export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number
             remaining: d.remaining, totalQuantity: d.total_quantity, expiryMinutes: d.expiry_minutes,
             category: d.category, imageUrl: d.image_url || '', weight: d.weight, description: d.description,
             shopName: d.shop_name || '알 수 없는 가게', distance: d.distance || '거리 알 수 없음',
-            latitude: d.latitude, longitude: d.longitude,
+            storeId: d.store_id, latitude: d.latitude, longitude: d.longitude,
           }));
-          buildMap(lat, lng, products);
+          buildMap(userLat, userLng, products);
         })
         .catch(console.error);
     };
@@ -115,13 +148,20 @@ export function MapPage({ onNavigate }: { onNavigate: (page: string, id?: number
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => { setIsLocating(false); fetchAndBuild(pos.coords.latitude, pos.coords.longitude); },
-        () => { setIsLocating(false); fetchAndBuild(37.556, 126.903); }
+        () => {
+          setIsLocating(false);
+          const fallbackLat = targetStore?.lat ?? 37.556;
+          const fallbackLng = targetStore?.lng ?? 126.903;
+          fetchAndBuild(fallbackLat, fallbackLng);
+        }
       );
     } else {
       setIsLocating(false);
-      fetchAndBuild(37.556, 126.903);
+      const fallbackLat = targetStore?.lat ?? 37.556;
+      const fallbackLng = targetStore?.lng ?? 126.903;
+      fetchAndBuild(fallbackLat, fallbackLng);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '600px' }}>

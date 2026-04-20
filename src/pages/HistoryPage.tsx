@@ -38,8 +38,14 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
   const isSeller = !!storeId && !buyerId;
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [reviewingItem, setReviewingItem] = useState<{ name: string; shop: string; quantity?: number } | null>(null);
+  const [reviewingItem, setReviewingItem] = useState<{
+    name: string; shop: string; quantity?: number;
+    orderId: number; storeId: number;
+  } | null>(null);
   const [rating, setRating] = useState(5);
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<number>>(new Set());
+  const [reviewContent, setReviewContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -68,12 +74,39 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
     return `${diffD}일 전`;
   };
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`리뷰 (별점: ${rating}점)가 성공적으로 등록되었습니다. 환경 보호에 동참해주셔서 감사합니다! 🌍`);
-    setReviewingItem(null);
-    setRating(5);
-    onNavigate('reviews');
+    if (!reviewingItem || !buyerId) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://localhost:8001/api/v1/reviews/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: reviewingItem.storeId,
+          order_id: reviewingItem.orderId,
+          buyer_id: buyerId,
+          rating,
+          content: reviewContent,
+        }),
+      });
+      if (res.ok) {
+        setReviewedOrderIds(prev => new Set(prev).add(reviewingItem.orderId));
+        setReviewingItem(null);
+        setRating(5);
+        setReviewContent('');
+        onNavigate('reviews');
+      } else if (res.status === 409) {
+        alert('이미 이 주문에 대한 리뷰를 작성하셨습니다.');
+        setReviewingItem(null);
+      } else {
+        alert('리뷰 등록에 실패했습니다. 다시 시도해주세요.');
+      }
+    } catch {
+      alert('네트워크 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,10 +137,12 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
                 time={timeLabel}
                 id={`#${order.order_number}`}
                 imageUrl=""
-                onReview={cardStatus === '완료' ? () => setReviewingItem({
+                onReview={cardStatus === '완료' && !reviewedOrderIds.has(order.id) ? () => setReviewingItem({
                   name: order.items.map(i => i.product_name).join(', '),
                   shop: order.store_name,
                   quantity: order.items.reduce((s, i) => s + i.quantity, 0),
+                  orderId: order.id,
+                  storeId: order.store_id ?? 0,
                 }) : undefined}
               />
             );
@@ -127,7 +162,7 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 animate-slide-up pb-10 sm:pb-6 shadow-2xl max-h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-black">리뷰 쓰기</h2>
-              <button onClick={() => setReviewingItem(null)} className="text-gray-400 font-bold text-2xl px-2">✕</button>
+              <button onClick={() => { setReviewingItem(null); setReviewContent(''); setRating(5); }} className="text-gray-400 font-bold text-2xl px-2">✕</button>
             </div>
             <div className="bg-gray-50 p-4 rounded-xl mb-1 border border-gray-100 flex items-center gap-3">
               <div className="text-3xl">🛍️</div>
@@ -154,10 +189,12 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
               <textarea
                 placeholder="식재료의 신선도, 맛, 양 등에 대해 자유롭게 적어주세요!"
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:border-[#FFE400] outline-none h-32 resize-none text-sm leading-relaxed"
+                value={reviewContent}
+                onChange={e => setReviewContent(e.target.value)}
                 required
               />
-              <button type="submit" className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm">
-                리뷰 등록하기
+              <button type="submit" disabled={isSubmitting} className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm disabled:opacity-50">
+                {isSubmitting ? '등록 중...' : '리뷰 등록하기'}
               </button>
             </form>
           </div>

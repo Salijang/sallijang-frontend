@@ -1,10 +1,86 @@
+import { useState, useEffect } from 'react';
 import type { Page } from '../types';
 
-/**
- * 리뷰 목록 컴포넌트 페이지.
- * 유저와 판매자 역할에 따라 내가 쓴 리뷰인지 상점에 달린 리뷰인지 분기 처리합니다.
- */
-export function ReviewsPage({ onNavigate, userRole }: { onNavigate: (page: Page) => void, userRole?: 'USER' | 'SELLER' }) {
+interface Review {
+  id: number;
+  store_id: number;
+  buyer_id: number;
+  order_id: number;
+  rating: number;
+  content: string;
+  store_name: string | null;
+  created_at: string;
+}
+
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <span className="text-yellow-500 font-bold text-sm">
+      {'⭐'.repeat(rating)}{'<span className="text-gray-200">⭐</span>'.repeat(5 - rating)}
+      {' '}{rating}.0
+    </span>
+  );
+}
+
+function formatDate(isoString: string) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffD = Math.floor((now.getTime() - date.getTime()) / 86400000);
+  if (diffD === 0) return '오늘';
+  if (diffD === 1) return '어제';
+  return `${diffD}일 전`;
+}
+
+export function ReviewsPage({
+  onNavigate,
+  userRole,
+  buyerId,
+  storeId,
+}: {
+  onNavigate: (page: Page) => void;
+  userRole?: 'USER' | 'SELLER';
+  buyerId?: number | null;
+  storeId?: number | null;
+}) {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setIsLoading(true);
+      try {
+        const param = userRole === 'SELLER'
+          ? `store_id=${storeId}`
+          : `buyer_id=${buyerId}`;
+        if (!storeId && !buyerId) { setReviews([]); return; }
+        const res = await fetch(`http://localhost:8001/api/v1/reviews?${param}`);
+        if (res.ok) setReviews(await res.json());
+      } catch (err) {
+        console.error('Failed to fetch reviews:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [buyerId, storeId, userRole]);
+
+  const handleDelete = async (reviewId: number) => {
+    if (!confirm('리뷰를 삭제하시겠습니까?')) return;
+    const res = await fetch(`http://localhost:8001/api/v1/reviews/${reviewId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+    } else {
+      alert('삭제에 실패했습니다.');
+    }
+  };
+
+  const renderStars = (rating: number) => (
+    <span className="font-bold text-sm tracking-widest">
+      <span className="text-yellow-400">{'★'.repeat(rating)}</span>
+      <span className="text-gray-300">{'★'.repeat(5 - rating)}</span>
+      {' '}{rating}.0
+    </span>
+  );
+
   if (userRole === 'SELLER') {
     return (
       <div className="flex flex-col bg-gray-50 min-h-full pb-20">
@@ -13,33 +89,26 @@ export function ReviewsPage({ onNavigate, userRole }: { onNavigate: (page: Page)
           <h1 className="font-bold text-lg text-center flex-1 pr-8">고객 리뷰 관리</h1>
         </header>
         <div className="p-4 flex flex-col gap-4">
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <div className="font-extrabold">마포구 식객님</div>
-                   <div className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold">단골</div>
-                </div>
-                <div className="text-yellow-500 font-bold text-sm">⭐⭐⭐⭐⭐ 5.0</div>
-             </div>
-             <div className="text-xs text-gray-400 font-bold">국내산 삼겹살 (수량: 2개) 외 2건 · 오늘</div>
-             <p className="text-[14px] text-gray-700 leading-relaxed font-semibold mt-1">
-                항상 고기가 너무 신선하고 맛있어요! 마감 할인으로 저렴하게 구매해서 더 좋습니다. 사장님도 친절하세요ㅎㅎ 번창하세요!
-             </p>
-             <button className="mt-2 w-full py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-600 text-sm hover:bg-gray-100 active:scale-95 transition-all">답글 달기</button>
-          </div>
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <div className="font-extrabold">지구방위대님</div>
-                </div>
-                <div className="text-yellow-500 font-bold text-sm">⭐⭐⭐⭐ 4.0</div>
-             </div>
-             <div className="text-xs text-gray-400 font-bold">한우 불고기용 (수량: 1개) · 어제</div>
-             <p className="text-[14px] text-gray-700 leading-relaxed font-semibold mt-1">
-                고기는 맛있었는데 양념을 따로 팔지 않아서 조금 아쉬웠습니다. 그래도 고기 질 자체는 아주 좋아요.
-             </p>
-             <button className="mt-2 w-full py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-600 text-sm hover:bg-gray-100 active:scale-95 transition-all">답글 달기</button>
-          </div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+              <span className="text-4xl animate-spin">⏳</span>
+              <span className="font-bold">리뷰 불러오는 중...</span>
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+              <span className="text-4xl mb-2">📭</span>
+              <span className="font-bold">아직 작성된 리뷰가 없어요!</span>
+            </div>
+          ) : reviews.map(review => (
+            <div key={review.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="font-extrabold">구매자 #{review.buyer_id}</div>
+                {renderStars(review.rating)}
+              </div>
+              <div className="text-xs text-gray-400 font-bold">{formatDate(review.created_at)}</div>
+              <p className="text-[14px] text-gray-700 leading-relaxed font-semibold mt-1">{review.content}</p>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -52,44 +121,38 @@ export function ReviewsPage({ onNavigate, userRole }: { onNavigate: (page: Page)
         <h1 className="font-bold text-lg text-center flex-1 pr-8">내가 작성한 리뷰</h1>
       </header>
       <div className="p-4 flex flex-col gap-4">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
-           <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
-              <div className="w-10 h-10 bg-[#FFFBE6] rounded-full flex items-center justify-center text-xl border border-yellow-100">🥩</div>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+            <span className="text-4xl animate-spin">⏳</span>
+            <span className="font-bold">리뷰 불러오는 중...</span>
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
+            <span className="text-4xl mb-2">📭</span>
+            <span className="font-bold">작성한 리뷰가 없어요!</span>
+            <span className="text-xs">구매 완료 후 리뷰를 남겨보세요.</span>
+          </div>
+        ) : reviews.map(review => (
+          <div key={review.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
+            <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
+              <div className="w-10 h-10 bg-[#FFFBE6] rounded-full flex items-center justify-center text-xl border border-yellow-100">🛍️</div>
               <div className="flex flex-col">
-                 <div className="font-extrabold text-[15px]">망원 정육점 ❯</div>
-                 <div className="text-gray-400 text-xs font-bold mt-0.5">국내산 삼겹살 (수량: 2개) 외 2건</div>
+                <div className="font-extrabold text-[15px]">{review.store_name ?? `가게 #${review.store_id}`}</div>
               </div>
-           </div>
-           <div className="flex items-center justify-between mt-1">
-              <div className="text-yellow-500 font-bold text-lg tracking-widest">⭐⭐⭐⭐⭐</div>
-              <div className="text-gray-400 text-xs font-bold">오늘</div>
-           </div>
-           <p className="text-[14px] text-gray-700 leading-relaxed font-bold">
-              항상 고기가 너무 신선하고 맛있어요! 마감 할인으로 저렴하게 구매해서 더 좋습니다. 사장님도 친절하세요ㅎㅎ 번창하세요!
-           </p>
-           <button className="mt-1 flex items-center gap-1.5 text-red-500 text-sm font-bold w-fit bg-red-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">
-             <span>🗑️</span> 삭제
-           </button>
-        </div>
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
-           <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
-              <div className="w-10 h-10 bg-[#FFFBE6] rounded-full flex items-center justify-center text-xl border border-yellow-100">🥐</div>
-              <div className="flex flex-col">
-                 <div className="font-extrabold text-[15px]">동네 베이커리 ❯</div>
-                 <div className="text-gray-400 text-xs font-bold mt-0.5">오늘 구운 크루아상 (수량: 5개)</div>
-              </div>
-           </div>
-           <div className="flex items-center justify-between mt-1">
-              <div className="text-yellow-500 font-bold text-lg tracking-widest">⭐⭐⭐⭐<span className="text-gray-200">⭐</span></div>
-              <div className="text-gray-400 text-xs font-bold">3일 전</div>
-           </div>
-           <p className="text-[14px] text-gray-700 leading-relaxed font-bold">
-              아침에 구운건데 밤에 먹어도 바삭바삭해요! 다만 오늘 마감 할인이 제가 원하던 빵이 아니라서 조금 아쉬웠습니다.
-           </p>
-           <button className="mt-1 flex items-center gap-1.5 text-red-500 text-sm font-bold w-fit bg-red-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">
-             <span>🗑️</span> 삭제
-           </button>
-        </div>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              {renderStars(review.rating)}
+              <div className="text-gray-400 text-xs font-bold">{formatDate(review.created_at)}</div>
+            </div>
+            <p className="text-[14px] text-gray-700 leading-relaxed font-bold">{review.content}</p>
+            <button
+              onClick={() => handleDelete(review.id)}
+              className="mt-1 flex items-center gap-1.5 text-red-500 text-sm font-bold w-fit bg-red-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+            >
+              <span>🗑️</span> 삭제
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

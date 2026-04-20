@@ -6,6 +6,7 @@ interface StoreInfo {
   name: string;
   address: string | null;
   addressDetail: string | null;
+  avg_rating: number;
 }
 
 /**
@@ -21,6 +22,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
   userName?: string;
 }) {
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
+  const [wishlistCount, setWishlistCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
@@ -28,9 +30,17 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
       .then(res => res.json())
       .then(stores => {
         if (stores && stores.length > 0) {
-          setStoreInfo({ name: stores[0].name, address: stores[0].address ?? null, addressDetail: stores[0].address_detail ?? null });
+          setStoreInfo({ name: stores[0].name, address: stores[0].address ?? null, addressDetail: stores[0].address_detail ?? null, avg_rating: stores[0].avg_rating ?? 0 });
         }
       })
+      .catch(console.error);
+  }, [userRole, userId]);
+
+  useEffect(() => {
+    if (userRole !== 'USER' || !userId) return;
+    fetch(`http://localhost:8000/api/v1/wishlists?user_id=${userId}`)
+      .then(res => res.json())
+      .then(data => setWishlistCount(data.length))
       .catch(console.error);
   }, [userRole, userId]);
 
@@ -77,7 +87,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
               <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
                 <span className="text-2xl">⭐</span>
                 <span className="text-gray-600 text-xs font-bold">가게 평점</span>
-                <span className="font-extrabold text-sm">4.8</span>
+                <span className="font-extrabold text-sm">{storeInfo ? storeInfo.avg_rating.toFixed(1) : '-'}</span>
               </div>
             </div>
           </div>
@@ -140,7 +150,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
             <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
               <span className="text-2xl">❤️</span>
               <span className="text-gray-600 text-xs font-bold">찜한가게</span>
-              <span className="font-extrabold text-sm">5곳</span>
+              <span className="font-extrabold text-sm">{wishlistCount !== null ? `${wishlistCount}곳` : '-'}</span>
             </div>
           </div>
         </div>
