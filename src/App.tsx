@@ -23,6 +23,7 @@ import { CustomerCenterPage } from './pages/CustomerCenterPage';
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage';
 import { TermsPolicyPage } from './pages/TermsPolicyPage';
 import { MapPage } from './pages/MapPage';
+import { SalesHistoryPage } from './pages/SalesHistoryPage';
 
 /**
  * 앱의 메인 라우터이자 레이아웃을 담당하는 App 컴포넌트입니다.
@@ -141,7 +142,7 @@ export default function App() {
            {currentPage === 'detail' && selectedProductId && <DetailPage productId={selectedProductId} onBack={() => navigateTo('home')} onReserve={(qty, product, pickupAt) => { setOrderQuantity(qty); setFetchedProduct(product); setPickupExpectedAt(pickupAt); navigateTo('payment'); }} onAddToCart={(product, qty) => { addToCart(product, qty); navigateTo('cart'); }} now={now} isPcVersion={isPcVersion} userId={userId} />}
 
            {/* Wrap mobile-focused pages in a PC card */}
-           {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy'].includes(currentPage) && (
+           {['payment', 'complete', 'reservations', 'history', 'register', 'my', 'wishlist', 'sales', 'seller_home', 'reviews', 'cart', 'customer_center', 'notification_settings', 'terms_policy', 'sales_history'].includes(currentPage) && (
              <div className="max-w-3xl mx-auto bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 min-h-[600px] mt-8">
                {currentPage === 'seller_home' && <SellerHomePage isPcVersion={isPcVersion} userName={userName} userId={userId} storeId={storeId} />}
                {currentPage === 'payment' && (
@@ -159,8 +160,9 @@ export default function App() {
                {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} buyerId={userId} storeId={storeId} />}
                {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateCartQuantity} />}
                {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
-               {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
+               {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} userId={userId} />}
                {currentPage === 'terms_policy' && <TermsPolicyPage onNavigate={navigateTo} />}
+               {currentPage === 'sales_history' && <SalesHistoryPage onNavigate={navigateTo} storeId={storeId} />}
              </div>
            )}
            {currentPage === 'map' && (
@@ -200,8 +202,9 @@ export default function App() {
           {currentPage === 'reviews' && <ReviewsPage onNavigate={navigateTo} userRole={userRole} buyerId={userId} storeId={storeId} />}
           {currentPage === 'cart' && <CartPage onNavigate={navigateTo} onBack={() => navigateTo('home')} onOrder={handleCartOrder} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateCartQuantity} />}
           {currentPage === 'customer_center' && <CustomerCenterPage onNavigate={navigateTo} userRole={userRole} />}
-          {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} />}
+          {currentPage === 'notification_settings' && <NotificationSettingsPage onNavigate={navigateTo} userRole={userRole} userId={userId} />}
           {currentPage === 'terms_policy' && <TermsPolicyPage onNavigate={navigateTo} />}
+          {currentPage === 'sales_history' && <SalesHistoryPage onNavigate={navigateTo} storeId={storeId} />}
           {currentPage === 'map' && <MapPage onNavigate={(p, id) => navigateTo(p as any, id)} targetStore={targetMapStore} />}
         </div>
 

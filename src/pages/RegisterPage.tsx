@@ -12,13 +12,11 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
   const [quantity, setQuantity] = useState<number | "">(5);
   const [discount, setDiscount] = useState(60);
   const [time, setTime] = useState(() => {
-    // 현재 시간 이후 첫 30분 경계, 기본값은 20:00 (아직 안 지났으면)
     const now = new Date();
     const nowM = now.getMinutes();
     let h = nowM > 30 ? now.getHours() + 1 : now.getHours();
     let m = nowM <= 0 ? 0 : nowM <= 30 ? 30 : 0;
     if (h > 23) { h = 23; m = 30; }
-    if (h < 20) { h = 20; m = 0; }
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   });
   const [description, setDescription] = useState("");

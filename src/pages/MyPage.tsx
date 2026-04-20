@@ -14,7 +14,7 @@ interface StoreInfo {
  * 판매자 혹은 유저의 프로필 및 각종 메뉴를 표시합니다.
  * userName, userId, storeId를 App.tsx에서 전달받아 실제 데이터를 표시합니다.
  */
-export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userName }: {
+export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
   onNavigate: (page: Page) => void;
   userRole?: 'USER' | 'SELLER';
   userId?: number | null;
@@ -23,6 +23,8 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
 }) {
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [wishlistCount, setWishlistCount] = useState<number | null>(null);
+  const [sellingCount, setSellingCount] = useState<number | null>(null);
+  const [regularCount, setRegularCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
@@ -35,6 +37,18 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
       })
       .catch(console.error);
   }, [userRole, userId]);
+
+  useEffect(() => {
+    if (userRole !== 'SELLER' || !storeId) return;
+    fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`)
+      .then(res => res.json())
+      .then(data => setSellingCount(data.length))
+      .catch(console.error);
+    fetch(`http://localhost:8000/api/v1/wishlists?store_id=${storeId}`)
+      .then(res => res.json())
+      .then(data => setRegularCount(Array.isArray(data) ? data.length : 0))
+      .catch(console.error);
+  }, [userRole, storeId]);
 
   useEffect(() => {
     if (userRole !== 'USER' || !userId) return;
@@ -74,17 +88,17 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
             </div>
 
             <div className="flex justify-around mt-6 pt-5 border-t border-gray-100">
-              <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+              <div className="flex flex-col items-center gap-1">
                 <span className="text-2xl">📦</span>
                 <span className="text-gray-600 text-xs font-bold">판매중</span>
-                <span className="font-extrabold text-sm">3건</span>
+                <span className="font-extrabold text-sm">{sellingCount !== null ? `${sellingCount}건` : '-'}</span>
               </div>
-              <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+              <div className="flex flex-col items-center gap-1">
                 <span className="text-2xl">🤝</span>
                 <span className="text-gray-600 text-xs font-bold">단골 손님</span>
-                <span className="font-extrabold text-sm">128명</span>
+                <span className="font-extrabold text-sm">{regularCount !== null ? `${regularCount}명` : '-'}</span>
               </div>
-              <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+              <div className="flex flex-col items-center gap-1">
                 <span className="text-2xl">⭐</span>
                 <span className="text-gray-600 text-xs font-bold">가게 평점</span>
                 <span className="font-extrabold text-sm">{storeInfo ? storeInfo.avg_rating.toFixed(1) : '-'}</span>
@@ -96,7 +110,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId: _storeId, userNa
             <MenuList title="가게 관리" items={[
               { label: '주문 내역', icon: '🧾', onClick: () => onNavigate('history') },
               { label: '리뷰 관리', icon: '⭐', onClick: () => onNavigate('reviews') },
-              { label: '정산 내역', icon: '💰' },
+              { label: '판매 내역', icon: '💰', onClick: () => onNavigate('sales_history') },
             ]} />
           </div>
 

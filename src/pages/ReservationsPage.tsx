@@ -76,7 +76,7 @@ export function ReservationsPage({
         const res = await fetch(`http://localhost:8002/api/v1/orders/?status=pending&store_id=${storeId}`);
         if (res.ok) setOrders(await res.json());
       } catch {}
-    }, 10_000);
+    }, 5_000);
     return () => clearInterval(id);
   }, [userRole, storeId]);
 
@@ -197,7 +197,7 @@ export function ReservationsPage({
             )}
           </div>
 
-          <div className="flex flex-col gap-3 mt-4">
+          <div className="flex flex-col gap-3 mt-4 pb-24">
             <button
               onClick={() => handleComplete(selectedOrder.id)}
               className="w-full bg-[#FFE400] text-black font-extrabold text-lg py-4 rounded-xl hover:bg-yellow-400 active:scale-95 transition-transform shadow-sm"

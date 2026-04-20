@@ -12,15 +12,6 @@ interface Review {
   created_at: string;
 }
 
-function StarDisplay({ rating }: { rating: number }) {
-  return (
-    <span className="text-yellow-500 font-bold text-sm">
-      {'⭐'.repeat(rating)}{'<span className="text-gray-200">⭐</span>'.repeat(5 - rating)}
-      {' '}{rating}.0
-    </span>
-  );
-}
-
 function formatDate(isoString: string) {
   const date = new Date(isoString);
   const now = new Date();

@@ -1,24 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Page } from '../types';
 
-export function NotificationSettingsPage({ onNavigate, userRole }: { onNavigate: (page: Page) => void, userRole?: 'USER' | 'SELLER' }) {
+export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
+  onNavigate: (page: Page) => void;
+  userRole?: 'USER' | 'SELLER';
+  userId?: number | null;
+}) {
   const isSeller = userRole === 'SELLER';
-  
-  // States for notifications
+
   const [slackEnabled, setSlackEnabled] = useState(true);
   const [orderEnabled, setOrderEnabled] = useState(true);
   const [reviewEnabled, setReviewEnabled] = useState(true);
-  const [settlementEnabled, setSettlementEnabled] = useState(true);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
 
-  const Toggle = ({ enabled, setEnabled }: { enabled: boolean, setEnabled: (v: boolean) => void }) => (
-    <button 
-      onClick={() => setEnabled(!enabled)}
+  useEffect(() => {
+    if (!isSeller || !userId) return;
+    fetch(`http://localhost:8003/api/v1/notifications/settings/${userId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setOrderEnabled(data.new_order);
+          setReviewEnabled(data.review);
+        }
+      })
+      .catch(console.error);
+  }, [isSeller, userId]);
+
+  const saveSetting = useCallback((key: 'new_order' | 'review', value: boolean) => {
+    if (!isSeller || !userId) return;
+    fetch(`http://localhost:8003/api/v1/notifications/settings/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: value }),
+    }).catch(console.error);
+  }, [isSeller, userId]);
+
+  const Toggle = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
+    <button
+      onClick={onToggle}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${enabled ? 'bg-[#FFE400]' : 'bg-gray-200'}`}
     >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
-      />
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
     </button>
   );
 
@@ -35,9 +57,9 @@ export function NotificationSettingsPage({ onNavigate, userRole }: { onNavigate:
           <div className="flex items-center justify-between py-2">
             <div>
               <div className="font-bold text-sm">슬랙(Slack) 알림</div>
-              <p className="text-xs text-gray-500 mt-1">{isSeller ? '신규 주문 및 정산 내역을 슬랙으로 받아보세요.' : '주문 및 공지사항을 슬랙으로 받아보세요.'}</p>
+              <p className="text-xs text-gray-500 mt-1">{isSeller ? '신규 주문 알림을 슬랙으로 받아보세요.' : '주문 및 공지사항을 슬랙으로 받아보세요.'}</p>
             </div>
-            <Toggle enabled={slackEnabled} setEnabled={setSlackEnabled} />
+            <Toggle enabled={slackEnabled} onToggle={() => setSlackEnabled(v => !v)} />
           </div>
         </section>
 
@@ -51,21 +73,22 @@ export function NotificationSettingsPage({ onNavigate, userRole }: { onNavigate:
                     <div className="font-bold text-sm">신규 주문 알림</div>
                     <p className="text-xs text-gray-500 mt-1">새로운 주문이 접수되면 즉시 알려드립니다.</p>
                   </div>
-                  <Toggle enabled={orderEnabled} setEnabled={setOrderEnabled} />
+                  <Toggle enabled={orderEnabled} onToggle={() => {
+                    const next = !orderEnabled;
+                    setOrderEnabled(next);
+                    saveSetting('new_order', next);
+                  }} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">리뷰 등록 알림</div>
                     <p className="text-xs text-gray-500 mt-1">고객님이 소중한 리뷰를 남기면 알려드립니다.</p>
                   </div>
-                  <Toggle enabled={reviewEnabled} setEnabled={setReviewEnabled} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-sm">정산 완료 알림</div>
-                    <p className="text-xs text-gray-500 mt-1">대금 정산이 완료되면 내역을 전송해드립니다.</p>
-                  </div>
-                  <Toggle enabled={settlementEnabled} setEnabled={setSettlementEnabled} />
+                  <Toggle enabled={reviewEnabled} onToggle={() => {
+                    const next = !reviewEnabled;
+                    setReviewEnabled(next);
+                    saveSetting('review', next);
+                  }} />
                 </div>
               </>
             ) : (
@@ -75,14 +98,14 @@ export function NotificationSettingsPage({ onNavigate, userRole }: { onNavigate:
                     <div className="font-bold text-sm">주문 및 쇼핑 알림</div>
                     <p className="text-xs text-gray-500 mt-1">결제, 취소, 배송 등 쇼핑 필수 정보를 알립니다.</p>
                   </div>
-                  <Toggle enabled={orderEnabled} setEnabled={setOrderEnabled} />
+                  <Toggle enabled={orderEnabled} onToggle={() => setOrderEnabled(v => !v)} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">이벤트 및 혜택 알림</div>
                     <p className="text-xs text-gray-500 mt-1">다양한 이벤트와 쿠폰 소식을 알려드립니다.</p>
                   </div>
-                  <Toggle enabled={marketingEnabled} setEnabled={setMarketingEnabled} />
+                  <Toggle enabled={marketingEnabled} onToggle={() => setMarketingEnabled(v => !v)} />
                 </div>
               </>
             )}

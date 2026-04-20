@@ -28,6 +28,7 @@ const EVENT_META: Record<string, { type: NotifType; icon: string; message: strin
   order_cancelled:      { type: 'warning', icon: '❌', message: '주문이 취소되었어요' },
   order_cancelled_self: { type: 'warning', icon: '↩️', message: '주문을 취소했어요' },
   pickup_reminder:      { type: 'urgent',  icon: '🔥', message: '픽업까지 15분 남았어요!' },
+  new_review:           { type: 'normal',  icon: '⭐', message: '새 리뷰가 등록됐어요' },
 };
 
 const NOTIF_STYLES: Record<NotifType, { bg: string; badge: string }> = {
