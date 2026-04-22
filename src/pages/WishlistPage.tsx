@@ -36,7 +36,7 @@ export function WishlistPage({
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/service/user/api/v1/wishlists?user_id=${userId}`);
+        const res = await fetch(`/service/user/api/v1/wishlists/?user_id=${userId}`);
         const wishlistData: WishlistItem[] = await res.json();
 
         const enriched = await Promise.all(

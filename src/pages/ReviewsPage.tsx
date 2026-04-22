@@ -43,7 +43,7 @@ export function ReviewsPage({
           ? `store_id=${storeId}`
           : `buyer_id=${buyerId}`;
         if (!storeId && !buyerId) { setReviews([]); return; }
-        const res = await fetch(`/service/product/api/v1/reviews?${param}`);
+        const res = await fetch(`/service/product/api/v1/reviews/?${param}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {
         console.error('Failed to fetch reviews:', err);

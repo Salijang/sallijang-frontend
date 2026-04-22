@@ -84,7 +84,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
 
   useEffect(() => {
     if (!product?.storeId || !userId) return;
-    fetch(`/service/user/api/v1/wishlists?user_id=${userId}`)
+    fetch(`/service/user/api/v1/wishlists/?user_id=${userId}`)
       .then(res => res.json())
       .then((data: { id: number; store_id: number }[]) => {
         const found = data.find(w => w.store_id === product.storeId);
@@ -101,7 +101,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
         const res = await fetch(`/service/user/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
         if (res.ok) setWishlistItemId(null);
       } else {
-        const res = await fetch('/service/user/api/v1/wishlists', {
+        const res = await fetch('/service/user/api/v1/wishlists/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId, store_id: product.storeId }),

@@ -44,7 +44,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
       .then(res => res.json())
       .then(data => setSellingCount(data.length))
       .catch(console.error);
-    fetch(`/service/user/api/v1/wishlists?store_id=${storeId}`)
+    fetch(`/service/user/api/v1/wishlists/?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setRegularCount(Array.isArray(data) ? data.length : 0))
       .catch(console.error);
@@ -52,7 +52,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'USER' || !userId) return;
-    fetch(`/service/user/api/v1/wishlists?user_id=${userId}`)
+    fetch(`/service/user/api/v1/wishlists/?user_id=${userId}`)
       .then(res => res.json())
       .then(data => setWishlistCount(data.length))
       .catch(console.error);
