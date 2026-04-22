@@ -55,3 +55,28 @@ jobs:
           # ECR로 푸시
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # 6. 매니페스트 레포지토리 체크아웃
+      - name: Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          repository: Salijang/sallijang-manifest
+          token: ${{ secrets.GHA_TOKEN }}
+          path: manifest
+
+      # 7. Kustomize 설치
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      # 8. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시
+      - name: Update Kubernetes resources
+        run: |
+          cd manifest/base/frontend
+          REAL_IMAGE_URL="${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}"
+          kustomize edit set image frontend-image=$REAL_IMAGE_URL:${{ github.sha }}
+          cat kustomization.yaml
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git add kustomization.yaml
+          git diff --cached --quiet || git commit -m "chore(frontend): update image tag to ${{ github.sha }} [skip ci]"
+          git push origin main

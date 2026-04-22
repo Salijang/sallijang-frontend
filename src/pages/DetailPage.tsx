@@ -37,7 +37,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
     }
 
     function doFetch(p: URLSearchParams) {
-      fetch(`http://localhost:8001/api/v1/products/${productId}${p.toString() ? '?' + p.toString() : ''}`)
+      fetch(`/service/product/api/v1/products/${productId}${p.toString() ? '?' + p.toString() : ''}`)
       .then(res => res.json())
       .then(data => {
         const p: Product = {
@@ -84,7 +84,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
 
   useEffect(() => {
     if (!product?.storeId || !userId) return;
-    fetch(`http://localhost:8000/api/v1/wishlists?user_id=${userId}`)
+    fetch(`/service/user/api/v1/wishlists?user_id=${userId}`)
       .then(res => res.json())
       .then((data: { id: number; store_id: number }[]) => {
         const found = data.find(w => w.store_id === product.storeId);
@@ -98,10 +98,10 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
     setWishlistLoading(true);
     try {
       if (wishlistItemId !== null) {
-        const res = await fetch(`http://localhost:8000/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
+        const res = await fetch(`/service/user/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
         if (res.ok) setWishlistItemId(null);
       } else {
-        const res = await fetch('http://localhost:8000/api/v1/wishlists', {
+        const res = await fetch('/service/user/api/v1/wishlists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId, store_id: product.storeId }),

@@ -15,7 +15,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
 
   useEffect(() => {
     if (!isSeller || !userId) return;
-    fetch(`http://localhost:8003/api/v1/notifications/settings/${userId}`)
+    fetch(`/service/notify/api/v1/notifications/settings/${userId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
@@ -28,7 +28,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
 
   const saveSetting = useCallback((key: 'new_order' | 'review', value: boolean) => {
     if (!isSeller || !userId) return;
-    fetch(`http://localhost:8003/api/v1/notifications/settings/${userId}`, {
+    fetch(`/service/notify/api/v1/notifications/settings/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),

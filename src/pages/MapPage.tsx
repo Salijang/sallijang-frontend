@@ -130,7 +130,7 @@ export function MapPage({
     const fetchAndBuild = (userLat: number, userLng: number) => {
       const fetchLat = targetStore?.lat ?? userLat;
       const fetchLng = targetStore?.lng ?? userLng;
-      fetch(`http://localhost:8001/api/v1/products/?user_lat=${fetchLat}&user_lng=${fetchLng}`)
+      fetch(`/service/product/api/v1/products/?user_lat=${fetchLat}&user_lng=${fetchLng}`)
         .then(res => res.json())
         .then(data => {
           const products: ProductWithCoords[] = data.map((d: any) => ({

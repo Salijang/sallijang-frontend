@@ -44,7 +44,7 @@ export function ReservationsPage({
   const fetchOrders = async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      let url = 'http://localhost:8002/api/v1/orders/?status=pending';
+      let url = '/service/order/api/v1/orders/?status=pending';
       if (userRole === 'SELLER' && storeId) {
         url += `&store_id=${storeId}`;
       } else if (buyerId) {
@@ -73,7 +73,7 @@ export function ReservationsPage({
     if (userRole !== 'SELLER' || !storeId) return;
     const id = setInterval(async () => {
       try {
-        const res = await fetch(`http://localhost:8002/api/v1/orders/?status=pending&store_id=${storeId}`);
+        const res = await fetch(`/service/order/api/v1/orders/?status=pending&store_id=${storeId}`);
         if (res.ok) setOrders(await res.json());
       } catch {}
     }, 5_000);
@@ -84,7 +84,7 @@ export function ReservationsPage({
     if (!window.confirm('정말 취소하겠습니까?')) return;
     try {
       const cancelledBy = userRole === 'SELLER' ? 'seller' : 'buyer';
-      const res = await fetch(`http://localhost:8002/api/v1/orders/${orderId}?cancelled_by=${cancelledBy}`, {
+      const res = await fetch(`/service/order/api/v1/orders/${orderId}?cancelled_by=${cancelledBy}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -100,7 +100,7 @@ export function ReservationsPage({
 
   const handleComplete = async (orderId: number) => {
     try {
-      const res = await fetch(`http://localhost:8002/api/v1/orders/${orderId}/status`, {
+      const res = await fetch(`/service/order/api/v1/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed' }),

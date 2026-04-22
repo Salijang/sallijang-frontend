@@ -85,7 +85,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       params.append('category', category);
     }
 
-    fetch(`http://localhost:8001/api/v1/products/?${params.toString()}`)
+    fetch(`/service/product/api/v1/products/?${params.toString()}`)
       .then(res => res.json())
       .then(data => {
         const mapped = data.map(mapProduct);

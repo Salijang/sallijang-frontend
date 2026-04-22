@@ -70,7 +70,7 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
         items: orderItems,
       };
 
-      const response = await fetch('http://localhost:8002/api/v1/orders/', {
+      const response = await fetch('/service/order/api/v1/orders/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload),

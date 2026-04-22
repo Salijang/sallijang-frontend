@@ -36,13 +36,13 @@ export function WishlistPage({
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/wishlists?user_id=${userId}`);
+        const res = await fetch(`/service/user/api/v1/wishlists?user_id=${userId}`);
         const wishlistData: WishlistItem[] = await res.json();
 
         const enriched = await Promise.all(
           wishlistData.map(async (item) => {
             try {
-              const storeRes = await fetch(`http://localhost:8001/api/v1/stores/${item.store_id}`);
+              const storeRes = await fetch(`/service/product/api/v1/stores/${item.store_id}`);
               const store: StoreDetail = await storeRes.json();
               return { ...item, store };
             } catch {
@@ -62,7 +62,7 @@ export function WishlistPage({
 
   const handleRemove = async (e: React.MouseEvent, wishlistId: number) => {
     e.stopPropagation();
-    const res = await fetch(`http://localhost:8000/api/v1/wishlists/${wishlistId}`, { method: 'DELETE' });
+    const res = await fetch(`/service/user/api/v1/wishlists/${wishlistId}`, { method: 'DELETE' });
     if (res.ok) {
       setItems(prev => prev.filter(i => i.id !== wishlistId));
     }

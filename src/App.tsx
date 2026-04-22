@@ -99,7 +99,7 @@ export default function App() {
   const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
   useEffect(() => {
     if (selectedProductId && ['payment', 'complete'].includes(currentPage)) {
-       fetch(`http://localhost:8001/api/v1/products/${selectedProductId}`)
+       fetch(`/service/product/api/v1/products/${selectedProductId}`)
          .then(res => res.json())
          .then(data => {
             setFetchedProduct({

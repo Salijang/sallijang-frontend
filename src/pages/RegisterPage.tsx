@@ -78,7 +78,7 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
     }
     if (window.confirm("이대로 등록하시겠습니까?")) {
       try {
-        const res = await fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`, {
+        const res = await fetch(`/service/product/api/v1/products/?store_id=${storeId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -35,7 +35,7 @@ export function CartPage({ onNavigate, onBack, onOrder, cart, onRemove, onUpdate
   const handleOrder = useCallback(async (shopName: string, entries: CartEntry[]) => {
     const results = await Promise.all(
       entries.map(e =>
-        fetch(`http://localhost:8001/api/v1/products/${e.product.id}`)
+        fetch(`/service/product/api/v1/products/${e.product.id}`)
           .then(r => r.ok ? r.json() : null)
           .then(data => ({
             id: e.product.id,

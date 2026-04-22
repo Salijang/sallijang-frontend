@@ -34,7 +34,7 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/signup', {
+      const response = await fetch('/service/user/api/v1/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
 
       if (role === 'SELLER') {
         try {
-          const storeRes = await fetch(`http://localhost:8001/api/v1/stores/?owner_id=${userData.id}`, {
+          const storeRes = await fetch(`/service/product/api/v1/stores/?owner_id=${userData.id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

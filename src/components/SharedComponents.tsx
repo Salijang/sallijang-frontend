@@ -5,7 +5,7 @@ import type { Page } from '../types';
 // 알림 서비스 (useNotifications + NotificationDrawer)
 // ==========================================
 
-const NOTIFY_BASE = 'http://localhost:8003/api/v1/notifications';
+const NOTIFY_BASE = '/service/notify/api/v1/notifications';
 
 export type ApiNotif = {
   id: number;
@@ -170,7 +170,7 @@ export function usePendingOrderCount(storeId: number | null) {
   useEffect(() => {
     if (!storeId) return;
     const fetch_ = () =>
-      fetch(`http://localhost:8002/api/v1/orders/?status=pending&store_id=${storeId}`)
+      fetch(`/service/order/api/v1/orders/?status=pending&store_id=${storeId}`)
         .then(r => r.ok ? r.json() : [])
         .then((orders: unknown[]) => setCount(orders.length))
         .catch(() => {});

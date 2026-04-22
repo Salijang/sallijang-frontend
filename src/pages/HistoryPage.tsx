@@ -54,7 +54,7 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
         const id = isSeller ? storeId : buyerId;
         if (!id) { setOrders([]); return; }
         const param = isSeller ? `store_id=${id}` : `buyer_id=${id}`;
-        const res = await fetch(`http://localhost:8002/api/v1/orders/?${param}`);
+        const res = await fetch(`/service/order/api/v1/orders/?${param}`);
         if (res.ok) setOrders(await res.json());
       } catch (error) {
         console.error('Failed to fetch order history:', error);
@@ -79,7 +79,7 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
     if (!reviewingItem || !buyerId) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8001/api/v1/reviews/', {
+      const res = await fetch('/service/product/api/v1/reviews/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

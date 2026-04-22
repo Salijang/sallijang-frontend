@@ -16,7 +16,7 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
 
   useEffect(() => {
     if (!storeId) return;
-    fetch(`http://localhost:8002/api/v1/orders/stats?store_id=${storeId}`)
+    fetch(`/service/order/api/v1/orders/stats?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(console.error);
