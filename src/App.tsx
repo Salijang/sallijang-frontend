@@ -79,6 +79,22 @@ export default function App() {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    const role = (localStorage.getItem('user_role') as 'USER' | 'SELLER') || 'USER';
+    const uid = Number(localStorage.getItem('user_id')) || null;
+    const sid = Number(localStorage.getItem('store_id')) || null;
+    const name = localStorage.getItem('user_name') || '';
+
+    setUserRole(role);
+    if (uid) setUserId(uid);
+    if (sid) setStoreId(sid);
+    setUserName(name);
+    setCurrentPage(role === 'SELLER' ? 'seller_home' : 'home');
+  }, []);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
     }, 1000);

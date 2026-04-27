@@ -39,6 +39,9 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       const role: 'USER' | 'SELLER' = data.role === 'seller' ? 'SELLER' : 'USER';
 
       localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user_role', role);
+      localStorage.setItem('user_id', String(data.user_id));
+      localStorage.setItem('user_name', data.full_name || '');
 
       let fetchedStoreId: number | undefined = undefined;
       if (role === 'SELLER') {
@@ -48,6 +51,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
             const stores = await storeRes.json();
             if (stores && stores.length > 0) {
               fetchedStoreId = stores[0].id;
+              localStorage.setItem('store_id', String(stores[0].id));
             }
           }
         } catch (e) {

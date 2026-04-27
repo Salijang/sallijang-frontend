@@ -26,6 +26,11 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
   const [sellingCount, setSellingCount] = useState<number | null>(null);
   const [regularCount, setRegularCount] = useState<number | null>(null);
 
+  const handleLogout = () => {
+    ['access_token', 'user_role', 'user_id', 'store_id', 'user_name'].forEach(k => localStorage.removeItem(k));
+    onNavigate('login');
+  };
+
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
     fetch(`/service/product/api/v1/stores/?owner_id=${userId}`)
@@ -125,7 +130,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
           <div className="bg-white pt-2 pb-4 border-y border-gray-100 shadow-sm">
             <MenuList title="설정" items={[
               { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
-              { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
+              { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: handleLogout },
             ]} />
           </div>
         </div>
@@ -189,7 +194,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
             { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
             { label: '약관 및 정책', icon: '📄', onClick: () => onNavigate('terms_policy') },
             { label: '현재 버전', icon: 'ℹ️', value: '1.0.0' },
-            { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
+            { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: handleLogout },
           ]} />
         </div>
       </div>
