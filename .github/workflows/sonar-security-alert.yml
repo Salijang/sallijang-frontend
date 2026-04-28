@@ -1,0 +1,45 @@
+name: Sonar Security Alert
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  sonar-security-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=salijang
+            -Dsonar.projectKey=Salijang_sallijang-frontend
+            -Dsonar.sources=.
+
+      - name: Check Security Issues
+        run: |
+          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+          "https://sonarcloud.io/api/issues/search?componentKeys=Salijang_sallijang-frontend&types=VULNERABILITY&resolved=false" \
+          -o result.json
+
+          COUNT=$(jq '.total' result.json)
+
+          echo "COUNT=$COUNT" >> $GITHUB_ENV
+          echo "Security issue count: $COUNT"
+
+      - name: Send Slack Alert
+        if: env.COUNT != '0'
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"🚨 SonarQube Security Alert\nRepository: sallijang-frontend\nSecurity Issues: $COUNT 건\nProject Key: Salijang_sallijang-frontend\"}" \
+          "${{ secrets.SLACK_WEBHOOK_URL }}"
