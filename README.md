@@ -69,5 +69,5 @@ export default defineConfig([
       // other options...
     },
   },
-])//CI RETEST
+])//CI RETEST.
 ```
