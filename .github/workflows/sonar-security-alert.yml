@@ -16,30 +16,55 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check secret exists
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is missing"
+            exit 1
+          else
+            echo "SONAR_TOKEN exists"
+          fi
+
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is missing"
+            exit 1
+          else
+            echo "SLACK_WEBHOOK_URL exists"
+          fi
+
       - name: Run SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.organization=salijang
             -Dsonar.projectKey=Salijang_sallijang-frontend
-            -Dsonar.organization=salijang
+            -Dsonar.sources=.
+            -Dsonar.host.url=https://sonarcloud.io
 
       - name: Check Security Issues
+        id: security_check
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+          COUNT=$(curl -s -u $SONAR_TOKEN: \
           "https://sonarcloud.io/api/issues/search?componentKeys=Salijang_sallijang-frontend&types=VULNERABILITY&resolved=false" \
-          -o result.json
-
-          COUNT=$(jq '.total' result.json)
+          | jq '.total')
 
           echo "COUNT=$COUNT" >> $GITHUB_ENV
-          echo "Security issue count: $COUNT"
+          echo "Security Issues: $COUNT"
 
       - name: Send Slack Alert
         if: env.COUNT != '0'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\"🚨 SonarQube Security Alert\nRepository: sallijang-frontend\nSecurity Issues: $COUNT 건\nProject Key: Salijang_sallijang-frontend\"}" \
-          "${{ secrets.SLACK_WEBHOOK_URL }}"
+          --data "{
+            \"text\":\"🚨 SonarQube Security Alert\nRepository: sallijang-frontend\nOpen Security Issues: ${COUNT}건\nhttps://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
+          }" \
+          $SLACK_WEBHOOK_URL
