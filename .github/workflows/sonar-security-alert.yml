@@ -24,7 +24,7 @@ jobs:
           args: >
             -Dsonar.organization=salijang
             -Dsonar.projectKey=Salijang_sallijang-frontend
-            -Dsonar.sources=.
+            -Dsonar.organization=salijang
 
       - name: Check Security Issues
         run: |
