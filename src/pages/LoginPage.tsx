@@ -46,7 +46,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       let fetchedStoreId: number | undefined = undefined;
       if (role === 'SELLER') {
         try {
-          const storeRes = await fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${data.user_id}`);
+          const storeRes = await fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${data.user_id}`, { credentials: 'include' });
           if (storeRes.ok) {
             const stores = await storeRes.json();
             if (stores && stores.length > 0) {

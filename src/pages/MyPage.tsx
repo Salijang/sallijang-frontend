@@ -50,11 +50,11 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !storeId) return;
-    fetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setSellingCount(data.length))
       .catch(console.error);
-    fetch(`https://api.sallijang.shop/api/v1/wishlists/count?store_id=${storeId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/wishlists/count?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setRegularCount(typeof data.count === 'number' ? data.count : 0))
       .catch(console.error);

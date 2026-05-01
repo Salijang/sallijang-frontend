@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNotifications, NotificationDrawer } from '../components/SharedComponents';
+import { authFetch } from '../utils/authFetch';
 
 interface SalesStats {
   today_revenue: number;
@@ -16,7 +17,7 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
 
   useEffect(() => {
     if (!storeId) return;
-    fetch(`https://api.sallijang.shop/api/v1/orders/stats?store_id=${storeId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/orders/stats?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(console.error);

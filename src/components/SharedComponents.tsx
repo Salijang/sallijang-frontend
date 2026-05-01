@@ -171,7 +171,7 @@ export function usePendingOrderCount(storeId: number | null) {
   useEffect(() => {
     if (!storeId) return;
     const fetch_ = () =>
-      fetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`)
+      authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`)
         .then(r => r.ok ? r.json() : [])
         .then((orders: unknown[]) => setCount(orders.length))
         .catch(() => {});
