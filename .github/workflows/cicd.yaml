@@ -3,8 +3,6 @@ name: Deploy Frontend to S3 + CloudFront
 on:
   push:
     branches: [ "dev_yji" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   deploy:
