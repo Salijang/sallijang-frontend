@@ -13,6 +13,8 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
   const [orderEnabled, setOrderEnabled] = useState(true);
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [marketingEnabled, setMarketingEnabled] = useState(false);
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
+  const [webhookSaved, setWebhookSaved] = useState(false);
 
   useEffect(() => {
     if (!isSeller || !userId) return;
@@ -22,6 +24,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
         if (data) {
           setOrderEnabled(data.new_order);
           setReviewEnabled(data.review);
+          setSlackWebhookUrl(data.slack_webhook_url || '');
         }
       })
       .catch(console.error);
@@ -35,6 +38,17 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
       body: JSON.stringify({ [key]: value }),
     }).catch(console.error);
   }, [isSeller, userId]);
+
+  const saveWebhookUrl = useCallback(() => {
+    if (!isSeller || !userId) return;
+    authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slack_webhook_url: slackWebhookUrl }),
+    })
+      .then(r => { if (r.ok) { setWebhookSaved(true); setTimeout(() => setWebhookSaved(false), 2000); } })
+      .catch(console.error);
+  }, [isSeller, userId, slackWebhookUrl]);
 
   const Toggle = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
     <button
@@ -62,6 +76,27 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
             </div>
             <Toggle enabled={slackEnabled} onToggle={() => setSlackEnabled(v => !v)} />
           </div>
+          {isSeller && slackEnabled && (
+            <div className="mt-2 flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-600">Slack Incoming Webhook URL</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={slackWebhookUrl}
+                  onChange={e => setSlackWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-[#FFE400] focus:ring-2 focus:ring-yellow-100 transition-all"
+                />
+                <button
+                  onClick={saveWebhookUrl}
+                  className="shrink-0 px-4 py-2 bg-[#FFE400] text-black font-extrabold rounded-xl text-xs hover:bg-yellow-400 active:scale-95 transition-transform"
+                >
+                  {webhookSaved ? '저장됨 ✓' : '저장'}
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 px-1">Slack 앱 설정에서 Incoming Webhook을 생성한 후 URL을 붙여넣으세요.</p>
+            </div>
+          )}
         </section>
 
         <section>
