@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ReservationCard } from '../components/SharedComponents';
+import { authFetch } from '../utils/authFetch';
 
 interface OrderItem {
   id: number;
@@ -47,13 +48,11 @@ export function ReservationsPage({
       let url = 'https://api.sallijang.shop/api/v1/orders/?status=pending';
       if (userRole === 'SELLER' && storeId) {
         url += `&store_id=${storeId}`;
-      } else if (buyerId) {
-        url += `&buyer_id=${buyerId}`;
-      } else {
+      } else if (!buyerId) {
         setOrders([]);
         return;
       }
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
@@ -73,7 +72,7 @@ export function ReservationsPage({
     if (userRole !== 'SELLER' || !storeId) return;
     const id = setInterval(async () => {
       try {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`);
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`);
         if (res.ok) setOrders(await res.json());
       } catch {}
     }, 5_000);
@@ -84,7 +83,7 @@ export function ReservationsPage({
     if (!window.confirm('정말 취소하겠습니까?')) return;
     try {
       const cancelledBy = userRole === 'SELLER' ? 'seller' : 'buyer';
-      const res = await fetch(`https://api.sallijang.shop/api/v1/orders/${orderId}?cancelled_by=${cancelledBy}`, {
+      const res = await authFetch(`https://api.sallijang.shop/api/v1/orders/${orderId}?cancelled_by=${cancelledBy}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -100,7 +99,7 @@ export function ReservationsPage({
 
   const handleComplete = async (orderId: number) => {
     try {
-      const res = await fetch(`https://api.sallijang.shop/api/v1/orders/${orderId}/status`, {
+      const res = await authFetch(`https://api.sallijang.shop/api/v1/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed' }),

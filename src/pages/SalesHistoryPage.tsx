@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 interface OrderItem {
   product_name: string;
@@ -31,7 +32,7 @@ export function SalesHistoryPage({ onNavigate, storeId }: {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/orders/?store_id=${storeId}&status=completed`);
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/orders/?store_id=${storeId}&status=completed`);
         if (!res.ok) { setIsLoading(false); return; }
         const data: SaleOrder[] = await res.json();
 

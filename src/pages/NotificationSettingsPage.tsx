@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Page } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
   onNavigate: (page: Page) => void;
@@ -15,7 +16,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
 
   useEffect(() => {
     if (!isSeller || !userId) return;
-    fetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
@@ -28,7 +29,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
 
   const saveSetting = useCallback((key: 'new_order' | 'review', value: boolean) => {
     if (!isSeller || !userId) return;
-    fetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
+    authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),

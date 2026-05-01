@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Page, Product } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 /**
  * 판매자가 등록한 상품을 관리하는 페이지.
@@ -38,7 +39,7 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
   if (editingProduct) {
      return <EditProductView product={editingProduct} onSave={async (updates: any) => {
         try {
-           const res = await fetch(`https://api.sallijang.shop/api/v1/products/${editingProduct.id}`, {
+           const res = await authFetch(`https://api.sallijang.shop/api/v1/products/${editingProduct.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(updates)
@@ -68,7 +69,7 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
   const handleDelete = async (id: number) => {
     if (window.confirm("정말 삭제하시겠습니까?")) {
       try {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/products/${id}`, { method: 'DELETE' });
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/products/${id}`, { method: 'DELETE' });
         if (res.ok) {
            setProducts(prev => prev.filter(p => p.id !== id));
            alert("삭제가 완료되었습니다.");

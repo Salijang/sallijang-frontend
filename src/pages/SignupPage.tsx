@@ -80,25 +80,37 @@ export function SignupPage({ onNavigate }: { onNavigate: (page: Page) => void })
         return;
       }
 
-      const userData = await response.json();
+      await response.json();
 
       if (role === 'SELLER') {
         try {
-          const storeRes = await fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${userData.id}`, {
+          // 가게 생성은 JWT 인증이 필요하므로 먼저 로그인하여 쿠키 발급
+          const loginForm = new URLSearchParams();
+          loginForm.append('username', email);
+          loginForm.append('password', password);
+          const loginRes = await fetch('https://api.sallijang.shop/api/v1/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              name: shopName, 
-              address: shopAddress,          // 다음 주소 검색으로 받은 기반 주소 (지오코딩용)
-              address_detail: shopAddressDetail || undefined  // 상세주소 (선택)
-            })
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: loginForm,
+            credentials: 'include',
           });
-          if (!storeRes.ok) {
-            const errBody = await storeRes.text();
-            console.error("Store creation HTTP error:", storeRes.status, errBody);
+          if (loginRes.ok) {
+            const storeRes = await fetch('https://api.sallijang.shop/api/v1/stores/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                name: shopName,
+                address: shopAddress,
+                address_detail: shopAddressDetail || undefined,
+              }),
+            });
+            if (!storeRes.ok) {
+              const errBody = await storeRes.text();
+              console.error("Store creation HTTP error:", storeRes.status, errBody);
+            }
           }
         } catch (e) {
-          // 스토어 생성 실패 시에도 회원가입 자체는 성공 처리
           console.error("Store creation failed:", e);
         }
       }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Product } from '../types';
 import { formatCountdown } from '../utils/timeUtils';
+import { authFetch } from '../utils/authFetch';
 
 /**
  * 특정 상품의 상세 정보를 확인하고 픽업 예약 수량을 설정하는 상세 페이지.
@@ -84,7 +85,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
 
   useEffect(() => {
     if (!product?.storeId || !userId) return;
-    fetch(`https://api.sallijang.shop/api/v1/wishlists/?user_id=${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/wishlists/`)
       .then(res => res.json())
       .then((data: { id: number; store_id: number }[]) => {
         const found = data.find(w => w.store_id === product.storeId);
@@ -98,13 +99,13 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
     setWishlistLoading(true);
     try {
       if (wishlistItemId !== null) {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/wishlists/${wishlistItemId}`, { method: 'DELETE' });
         if (res.ok) setWishlistItemId(null);
       } else {
-        const res = await fetch('https://api.sallijang.shop/api/v1/wishlists/', {
+        const res = await authFetch('https://api.sallijang.shop/api/v1/wishlists/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, store_id: product.storeId }),
+          body: JSON.stringify({ store_id: product.storeId }),
         });
         if (res.ok) {
           const data = await res.json();

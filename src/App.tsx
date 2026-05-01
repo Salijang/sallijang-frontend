@@ -41,6 +41,7 @@ export default function App() {
   const [userId, setUserId] = useState<number | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [targetMapStore, setTargetMapStore] = useState<{ lat: number; lng: number; storeId: number } | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
 
   // ── 장바구니 상태 ──────────────────────────────────────
   const [cart, setCart] = useState<CartEntry[]>([]);
@@ -79,19 +80,29 @@ export default function App() {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
-    const role = (localStorage.getItem('user_role') as 'USER' | 'SELLER') || 'USER';
-    const uid = Number(localStorage.getItem('user_id')) || null;
-    const sid = Number(localStorage.getItem('store_id')) || null;
-    const name = localStorage.getItem('user_name') || '';
-
-    setUserRole(role);
-    if (uid) setUserId(uid);
-    if (sid) setStoreId(sid);
-    setUserName(name);
-    setCurrentPage(role === 'SELLER' ? 'seller_home' : 'home');
+    const storedRole = localStorage.getItem('user_role') as 'USER' | 'SELLER' | null;
+    if (!storedRole) {
+      setAuthChecking(false);
+      return;
+    }
+    fetch('https://api.sallijang.shop/api/v1/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          const uid = Number(localStorage.getItem('user_id')) || null;
+          const sid = Number(localStorage.getItem('store_id')) || null;
+          const name = localStorage.getItem('user_name') || '';
+          setUserRole(storedRole);
+          if (uid) setUserId(uid);
+          if (sid) setStoreId(sid);
+          setUserName(name);
+          setCurrentPage(storedRole === 'SELLER' ? 'seller_home' : 'home');
+        } else {
+          ['user_role', 'user_id', 'store_id', 'user_name'].forEach(k => localStorage.removeItem(k));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecking(false));
   }, []);
 
   useEffect(() => {
@@ -145,6 +156,14 @@ export default function App() {
 
   // ── 판매자: 처리중 주문 수 (예약 탭 배지용) ────────
   const pendingOrderCount = usePendingOrderCount(userRole === 'SELLER' ? storeId : null);
+
+  if (authChecking) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-white">
+        <div className="text-4xl animate-spin">⏳</div>
+      </div>
+    );
+  }
 
   // PC 버전 UI
   if (isPcVersion) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Page } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 /**
  * 마감 재고(특가 상품)를 새로 등록하는 폼 컴포넌트.
@@ -78,7 +79,7 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
     }
     if (window.confirm("이대로 등록하시겠습니까?")) {
       try {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`, {
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

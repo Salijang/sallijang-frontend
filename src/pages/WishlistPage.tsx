@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { authFetch } from '../utils/authFetch';
 
 interface WishlistItem {
   id: number;
@@ -36,7 +37,7 @@ export function WishlistPage({
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`https://api.sallijang.shop/api/v1/wishlists/?user_id=${userId}`);
+        const res = await authFetch(`https://api.sallijang.shop/api/v1/wishlists/`);
         const wishlistData: WishlistItem[] = await res.json();
 
         const enriched = await Promise.all(
@@ -62,7 +63,7 @@ export function WishlistPage({
 
   const handleRemove = async (e: React.MouseEvent, wishlistId: number) => {
     e.stopPropagation();
-    const res = await fetch(`https://api.sallijang.shop/api/v1/wishlists/${wishlistId}`, { method: 'DELETE' });
+    const res = await authFetch(`https://api.sallijang.shop/api/v1/wishlists/${wishlistId}`, { method: 'DELETE' });
     if (res.ok) {
       setItems(prev => prev.filter(i => i.id !== wishlistId));
     }

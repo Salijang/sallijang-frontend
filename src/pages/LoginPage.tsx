@@ -27,6 +27,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -38,7 +39,6 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       // data.role: 'buyer' | 'seller'
       const role: 'USER' | 'SELLER' = data.role === 'seller' ? 'SELLER' : 'USER';
 
-      localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user_role', role);
       localStorage.setItem('user_id', String(data.user_id));
       localStorage.setItem('user_name', data.full_name || '');

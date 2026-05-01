@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../types';
 import { MenuList } from '../components/SharedComponents';
+import { authFetch } from '../utils/authFetch';
 
 interface StoreInfo {
   name: string;
@@ -26,14 +27,18 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
   const [sellingCount, setSellingCount] = useState<number | null>(null);
   const [regularCount, setRegularCount] = useState<number | null>(null);
 
-  const handleLogout = () => {
-    ['access_token', 'user_role', 'user_id', 'store_id', 'user_name'].forEach(k => localStorage.removeItem(k));
+  const handleLogout = async () => {
+    await fetch('https://api.sallijang.shop/api/v1/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+    ['user_role', 'user_id', 'store_id', 'user_name'].forEach(k => localStorage.removeItem(k));
     onNavigate('login');
   };
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
-    fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${userId}`)
       .then(res => res.json())
       .then(stores => {
         if (stores && stores.length > 0) {
@@ -49,17 +54,17 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
       .then(res => res.json())
       .then(data => setSellingCount(data.length))
       .catch(console.error);
-    fetch(`https://api.sallijang.shop/api/v1/wishlists/?store_id=${storeId}`)
+    fetch(`https://api.sallijang.shop/api/v1/wishlists/count?store_id=${storeId}`)
       .then(res => res.json())
-      .then(data => setRegularCount(Array.isArray(data) ? data.length : 0))
+      .then(data => setRegularCount(typeof data.count === 'number' ? data.count : 0))
       .catch(console.error);
   }, [userRole, storeId]);
 
   useEffect(() => {
     if (userRole !== 'USER' || !userId) return;
-    fetch(`https://api.sallijang.shop/api/v1/wishlists/?user_id=${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/wishlists/`)
       .then(res => res.json())
-      .then(data => setWishlistCount(data.length))
+      .then(data => setWishlistCount(Array.isArray(data) ? data.length : 0))
       .catch(console.error);
   }, [userRole, userId]);
 

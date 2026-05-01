@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ReservationCard } from '../components/SharedComponents';
+import { authFetch } from '../utils/authFetch';
 
 interface OrderItem {
   id: number;
@@ -53,8 +54,9 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
       try {
         const id = isSeller ? storeId : buyerId;
         if (!id) { setOrders([]); return; }
-        const param = isSeller ? `store_id=${id}` : `buyer_id=${id}`;
-        const res = await fetch(`https://api.sallijang.shop/api/v1/orders/?${param}`);
+        const param = isSeller ? `store_id=${id}` : '';
+        const url = `https://api.sallijang.shop/api/v1/orders/${param ? '?' + param : ''}`;
+        const res = await authFetch(url);
         if (res.ok) setOrders(await res.json());
       } catch (error) {
         console.error('Failed to fetch order history:', error);
@@ -79,13 +81,12 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
     if (!reviewingItem || !buyerId) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch('https://api.sallijang.shop/api/v1/reviews/', {
+      const res = await authFetch('https://api.sallijang.shop/api/v1/reviews/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           store_id: reviewingItem.storeId,
           order_id: reviewingItem.orderId,
-          buyer_id: buyerId,
           rating,
           content: reviewContent,
         }),
