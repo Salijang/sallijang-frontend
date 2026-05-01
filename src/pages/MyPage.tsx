@@ -33,7 +33,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
-    fetch(`/service/product/api/v1/stores/?owner_id=${userId}`)
+    fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${userId}`)
       .then(res => res.json())
       .then(stores => {
         if (stores && stores.length > 0) {
@@ -45,11 +45,11 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !storeId) return;
-    fetch(`/service/product/api/v1/products/?store_id=${storeId}`)
+    fetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setSellingCount(data.length))
       .catch(console.error);
-    fetch(`/service/user/api/v1/wishlists/?store_id=${storeId}`)
+    fetch(`https://api.sallijang.shop/api/v1/wishlists/?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setRegularCount(Array.isArray(data) ? data.length : 0))
       .catch(console.error);
@@ -57,7 +57,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'USER' || !userId) return;
-    fetch(`/service/user/api/v1/wishlists/?user_id=${userId}`)
+    fetch(`https://api.sallijang.shop/api/v1/wishlists/?user_id=${userId}`)
       .then(res => res.json())
       .then(data => setWishlistCount(data.length))
       .catch(console.error);

@@ -115,7 +115,7 @@ export default function App() {
   const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
   useEffect(() => {
     if (selectedProductId && ['payment', 'complete'].includes(currentPage)) {
-       fetch(`/service/product/api/v1/products/${selectedProductId}`)
+       fetch(`https://api.sallijang.shop/api/v1/products/${selectedProductId}`)
          .then(res => res.json())
          .then(data => {
             setFetchedProduct({

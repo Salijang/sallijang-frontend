@@ -31,7 +31,7 @@ export function SalesHistoryPage({ onNavigate, storeId }: {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/service/order/api/v1/orders/?store_id=${storeId}&status=completed`);
+        const res = await fetch(`https://api.sallijang.shop/api/v1/orders/?store_id=${storeId}&status=completed`);
         if (!res.ok) { setIsLoading(false); return; }
         const data: SaleOrder[] = await res.json();
 
@@ -39,7 +39,7 @@ export function SalesHistoryPage({ onNavigate, storeId }: {
         const nameMap = new Map<number, string>();
         await Promise.all(
           uniqueBuyerIds.map(uid =>
-            fetch(`/service/user/api/v1/users/${uid}`)
+            fetch(`https://api.sallijang.shop/api/v1/users/${uid}`)
               .then(r => r.ok ? r.json() : null)
               .then(u => { if (u) nameMap.set(uid, u.full_name); })
               .catch(() => {})

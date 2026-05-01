@@ -16,7 +16,7 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
 
   useEffect(() => {
     if (!storeId) return;
-    fetch(`/service/order/api/v1/orders/stats?store_id=${storeId}`)
+    fetch(`https://api.sallijang.shop/api/v1/orders/stats?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(console.error);

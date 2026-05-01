@@ -23,7 +23,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await fetch('/service/user/api/v1/auth/login', {
+      const response = await fetch('https://api.sallijang.shop/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData,
@@ -46,7 +46,7 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       let fetchedStoreId: number | undefined = undefined;
       if (role === 'SELLER') {
         try {
-          const storeRes = await fetch(`/service/product/api/v1/stores/?owner_id=${data.user_id}`);
+          const storeRes = await fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${data.user_id}`);
           if (storeRes.ok) {
             const stores = await storeRes.json();
             if (stores && stores.length > 0) {
