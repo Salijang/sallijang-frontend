@@ -22,7 +22,7 @@ interface PaymentPageProps {
   onComplete: (result: OrderResult) => void;
 }
 
-export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, buyerId, pickupExpectedAt, onBack, onComplete }: PaymentPageProps) {
+export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, pickupExpectedAt, onBack, onComplete }: PaymentPageProps) {
   const [method, setMethod] = useState<'toss' | 'onsite'>('toss');
   const [isLoading, setIsLoading] = useState(false);
 
