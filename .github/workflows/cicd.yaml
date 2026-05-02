@@ -2,7 +2,7 @@ name: Deploy Frontend to S3 + CloudFront
 
 on:
   push:
-    branches: [ "dev_yji" ]
+    branches: [ "main", "dev_yji" ]
 
 jobs:
   deploy:
