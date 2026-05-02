@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../types';
 import { MenuList } from '../components/SharedComponents';
+import { authFetch } from '../utils/authFetch';
 
 interface StoreInfo {
   name: string;
@@ -26,9 +27,18 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
   const [sellingCount, setSellingCount] = useState<number | null>(null);
   const [regularCount, setRegularCount] = useState<number | null>(null);
 
+  const handleLogout = async () => {
+    await fetch('https://api.sallijang.shop/api/v1/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+    ['user_role', 'user_id', 'store_id', 'user_name'].forEach(k => localStorage.removeItem(k));
+    onNavigate('login');
+  };
+
   useEffect(() => {
     if (userRole !== 'SELLER' || !userId) return;
-    fetch(`http://localhost:8001/api/v1/stores/?owner_id=${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${userId}`)
       .then(res => res.json())
       .then(stores => {
         if (stores && stores.length > 0) {
@@ -40,21 +50,21 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !storeId) return;
-    fetch(`http://localhost:8001/api/v1/products/?store_id=${storeId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/products/?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setSellingCount(data.length))
       .catch(console.error);
-    fetch(`http://localhost:8000/api/v1/wishlists?store_id=${storeId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/wishlists/count?store_id=${storeId}`)
       .then(res => res.json())
-      .then(data => setRegularCount(Array.isArray(data) ? data.length : 0))
+      .then(data => setRegularCount(typeof data.count === 'number' ? data.count : 0))
       .catch(console.error);
   }, [userRole, storeId]);
 
   useEffect(() => {
     if (userRole !== 'USER' || !userId) return;
-    fetch(`http://localhost:8000/api/v1/wishlists?user_id=${userId}`)
+    authFetch(`https://api.sallijang.shop/api/v1/wishlists/`)
       .then(res => res.json())
-      .then(data => setWishlistCount(data.length))
+      .then(data => setWishlistCount(Array.isArray(data) ? data.length : 0))
       .catch(console.error);
   }, [userRole, userId]);
 
@@ -125,7 +135,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
           <div className="bg-white pt-2 pb-4 border-y border-gray-100 shadow-sm">
             <MenuList title="설정" items={[
               { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
-              { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
+              { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: handleLogout },
             ]} />
           </div>
         </div>
@@ -189,7 +199,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
             { label: '알림 설정', icon: '🔔', onClick: () => onNavigate('notification_settings') },
             { label: '약관 및 정책', icon: '📄', onClick: () => onNavigate('terms_policy') },
             { label: '현재 버전', icon: 'ℹ️', value: '1.0.0' },
-            { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: () => onNavigate('login') },
+            { label: '로그아웃', icon: '🚪', textClass: 'text-red-500', onClick: handleLogout },
           ]} />
         </div>
       </div>

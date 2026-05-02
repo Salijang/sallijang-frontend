@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 interface Review {
   id: number;
@@ -43,7 +44,7 @@ export function ReviewsPage({
           ? `store_id=${storeId}`
           : `buyer_id=${buyerId}`;
         if (!storeId && !buyerId) { setReviews([]); return; }
-        const res = await fetch(`http://localhost:8001/api/v1/reviews?${param}`);
+        const res = await fetch(`https://api.sallijang.shop/api/v1/reviews/?${param}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {
         console.error('Failed to fetch reviews:', err);
@@ -56,7 +57,7 @@ export function ReviewsPage({
 
   const handleDelete = async (reviewId: number) => {
     if (!confirm('리뷰를 삭제하시겠습니까?')) return;
-    const res = await fetch(`http://localhost:8001/api/v1/reviews/${reviewId}`, { method: 'DELETE' });
+    const res = await authFetch(`https://api.sallijang.shop/api/v1/reviews/${reviewId}`, { method: 'DELETE' });
     if (res.ok) {
       setReviews(prev => prev.filter(r => r.id !== reviewId));
     } else {

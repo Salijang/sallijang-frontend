@@ -23,10 +23,11 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const response = await fetch('https://api.sallijang.shop/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -38,16 +39,19 @@ export function LoginPage({ onLogin, isPcVersion, onSetPcVersion, onNavigate }: 
       // data.role: 'buyer' | 'seller'
       const role: 'USER' | 'SELLER' = data.role === 'seller' ? 'SELLER' : 'USER';
 
-      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user_role', role);
+      localStorage.setItem('user_id', String(data.user_id));
+      localStorage.setItem('user_name', data.full_name || '');
 
       let fetchedStoreId: number | undefined = undefined;
       if (role === 'SELLER') {
         try {
-          const storeRes = await fetch(`http://localhost:8001/api/v1/stores/?owner_id=${data.user_id}`);
+          const storeRes = await fetch(`https://api.sallijang.shop/api/v1/stores/?owner_id=${data.user_id}`, { credentials: 'include' });
           if (storeRes.ok) {
             const stores = await storeRes.json();
             if (stores && stores.length > 0) {
               fetchedStoreId = stores[0].id;
+              localStorage.setItem('store_id', String(stores[0].id));
             }
           }
         } catch (e) {

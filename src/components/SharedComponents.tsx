@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 // ==========================================
 // 알림 서비스 (useNotifications + NotificationDrawer)
 // ==========================================
 
-const NOTIFY_BASE = 'http://localhost:8003/api/v1/notifications';
+const NOTIFY_BASE = 'https://api.sallijang.shop/api/v1/notifications';
 
 export type ApiNotif = {
   id: number;
@@ -54,20 +55,20 @@ export function useNotifications(userId: number | null, interval = 30_000) {
   const fetchNotifications = async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`${NOTIFY_BASE}/?user_id=${userId}`);
+      const res = await authFetch(`${NOTIFY_BASE}/`);
       if (res.ok) setNotifications(await res.json());
     } catch {}
   };
 
   const markRead = async (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
-    try { await fetch(`${NOTIFY_BASE}/${id}/read`, { method: 'PATCH' }); } catch {}
+    try { await authFetch(`${NOTIFY_BASE}/${id}/read`, { method: 'PATCH' }); } catch {}
   };
 
   const markAllRead = async () => {
     if (!userId) return;
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    try { await fetch(`${NOTIFY_BASE}/read-all?user_id=${userId}`, { method: 'PATCH' }); } catch {}
+    try { await authFetch(`${NOTIFY_BASE}/read-all`, { method: 'PATCH' }); } catch {}
   };
 
   useEffect(() => {
@@ -170,7 +171,7 @@ export function usePendingOrderCount(storeId: number | null) {
   useEffect(() => {
     if (!storeId) return;
     const fetch_ = () =>
-      fetch(`http://localhost:8002/api/v1/orders/?status=pending&store_id=${storeId}`)
+      authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`)
         .then(r => r.ok ? r.json() : [])
         .then((orders: unknown[]) => setCount(orders.length))
         .catch(() => {});

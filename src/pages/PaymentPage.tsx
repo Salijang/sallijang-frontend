@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Product, CartEntry, OrderResult } from '../types';
+import { authFetch } from '../utils/authFetch';
 
 /**
  * 결제 진행 페이지
@@ -21,7 +22,7 @@ interface PaymentPageProps {
   onComplete: (result: OrderResult) => void;
 }
 
-export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, buyerId, pickupExpectedAt, onBack, onComplete }: PaymentPageProps) {
+export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, pickupExpectedAt, onBack, onComplete }: PaymentPageProps) {
   const [method, setMethod] = useState<'toss' | 'onsite'>('toss');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,7 +62,6 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
         : [];
 
       const orderPayload = {
-        buyer_id: buyerId ?? 0,
         store_id: isCartMode ? (resolvedCartItems[0]?.product.storeId ?? null) : (product?.storeId ?? null),
         store_name: displayShopName ?? '알 수 없는 가게',
         payment_method: method,
@@ -70,7 +70,7 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
         items: orderItems,
       };
 
-      const response = await fetch('http://localhost:8002/api/v1/orders/', {
+      const response = await authFetch('https://api.sallijang.shop/api/v1/orders/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload),

@@ -17,8 +17,8 @@ FROM nginx:stable-alpine
 # 빌드 단계에서 생성된 정적 파일들을 Nginx의 기본 배포 경로로 복사
 # (일반적으로 dist 또는 build 폴더입니다. 프로젝트 설정에 맞춰 수정하세요)
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Nginx 기본 포트인 80번 오픈
 EXPOSE 80
 
 # Nginx 실행
