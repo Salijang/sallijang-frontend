@@ -160,7 +160,7 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
               <span className="font-bold text-sm">{uploading ? "업로드 중..." : "상품 사진 등록"}</span>
             </>
           )}
-          <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          <input type="file" accept="image/*" onChange={handleImageSelect} className="sr-only" />
         </label>
 
         {/* Input Form Groups */}
