@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/sonar-security-alert.yml'
 
 
 jobs:
