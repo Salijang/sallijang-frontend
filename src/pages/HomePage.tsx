@@ -37,12 +37,12 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotif, setShowNotif] = useState(false);
   const { unreadCount } = useNotifications(userId ?? null);
-  useProductStream(setProducts);
 
   const selectedCategoryRef = useRef(selectedCategory);
   selectedCategoryRef.current = selectedCategory;
 
   const [products, setProducts] = useState<Product[]>([]);
+  useProductStream(setProducts);
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
   const userLocRef = useRef<{lat: number, lng: number} | null>(null);
   const [page, setPage] = useState(0);
