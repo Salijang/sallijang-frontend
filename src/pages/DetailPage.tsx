@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Product } from '../types';
 import { formatCountdown } from '../utils/timeUtils';
 import { authFetch } from '../utils/authFetch';
