@@ -6,6 +6,7 @@ on:
       - main
       - develop
 
+
 jobs:
   sonar-security-alert:
     runs-on: ubuntu-latest
@@ -47,16 +48,26 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io
 
       - name: Check Security Issues
-        id: security_check
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          COUNT=$(curl -s -u $SONAR_TOKEN: \
+          curl -s -u "$SONAR_TOKEN:" \
           "https://sonarcloud.io/api/issues/search?componentKeys=Salijang_sallijang-frontend&types=VULNERABILITY&resolved=false" \
-          | jq '.total')
+          > sonar-results.json
+
+          COUNT=$(jq '.total' sonar-results.json)
+
+          HIGH_COUNT=$(jq '[.issues[] | select(.severity=="HIGH")] | length' sonar-results.json)
+
+          ISSUE=$(jq -r '.issues[] | select(.severity=="HIGH") | .message' sonar-results.json | head -n 1)
 
           echo "COUNT=$COUNT" >> $GITHUB_ENV
-          echo "Security Issues: $COUNT"
+          echo "HIGH_COUNT=$HIGH_COUNT" >> $GITHUB_ENV
+          echo "ISSUE=$ISSUE" >> $GITHUB_ENV
+
+          echo "Total Issues: $COUNT"
+          echo "High Issues: $HIGH_COUNT"
+          echo "Issue Message: $ISSUE"
 
       - name: Send Slack Alert
         if: env.COUNT != '0'
@@ -65,6 +76,6 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data "{
-            \"text\":\"🔍 SonarQube Security Alert\nRepository: sallijang-frontend\nOpen Security Issues: ${COUNT}건\nhttps://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
+            \"text\":\"🔍 *SonarQube Security Alert*\n<@U0A5ZUZRT7A>\nRepository: sallijang-*frontend*\nHIGH Issues: ${HIGH_COUNT}건\nIssue: ${ISSUE}\n확인: https://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
           }" \
-          $SLACK_WEBHOOK_URL
+          "$SLACK_WEBHOOK_URL"
