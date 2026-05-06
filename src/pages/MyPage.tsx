@@ -161,15 +161,15 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
           </div>
 
           <div className="flex justify-around mt-6 pt-5 border-t border-gray-100">
-            <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+            <div className="flex flex-col items-center gap-1">
               <span className="text-2xl">🎟️</span>
               <span className="text-gray-600 text-xs font-bold">할인쿠폰</span>
-              <span className="font-extrabold text-sm">2장</span>
+              <span className="font-extrabold text-sm text-gray-400">준비중</span>
             </div>
-            <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+            <div className="flex flex-col items-center gap-1">
               <span className="text-2xl">💰</span>
               <span className="text-gray-600 text-xs font-bold">포인트</span>
-              <span className="font-extrabold text-sm">1,500P</span>
+              <span className="font-extrabold text-sm text-gray-400">준비중</span>
             </div>
             <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
               <span className="text-2xl">❤️</span>

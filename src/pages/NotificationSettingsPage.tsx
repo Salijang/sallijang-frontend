@@ -17,7 +17,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
   const [webhookSaved, setWebhookSaved] = useState(false);
 
   useEffect(() => {
-    if (!isSeller || !userId) return;
+    if (!userId) return;
     authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -40,7 +40,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
   }, [isSeller, userId]);
 
   const saveWebhookUrl = useCallback(() => {
-    if (!isSeller || !userId) return;
+    if (!userId) return;
     authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -76,7 +76,7 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
             </div>
             <Toggle enabled={slackEnabled} onToggle={() => setSlackEnabled(v => !v)} />
           </div>
-          {isSeller && slackEnabled && (
+          {slackEnabled && (
             <div className="mt-2 flex flex-col gap-2">
               <label className="text-xs font-bold text-gray-600">Slack Incoming Webhook URL</label>
               <div className="flex gap-2">

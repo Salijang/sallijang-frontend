@@ -42,7 +42,10 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   selectedCategoryRef.current = selectedCategory;
 
   const [products, setProducts] = useState<Product[]>([]);
-  useProductStream(setProducts);
+  useProductStream(setProducts, () => {
+    const loc = userLocRef.current;
+    fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true, category: selectedCategoryRef.current });
+  });
   const [locationName, setLocationName] = useState('내 위치');
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
   const userLocRef = useRef<{lat: number, lng: number} | null>(null);

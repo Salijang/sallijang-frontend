@@ -213,7 +213,9 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
   if (!product) return <div className="p-10 flex justify-center text-gray-500 font-bold">로딩 중...</div>;
 
   const discountRate = Math.round((product.originalPrice - product.discountPrice) / product.originalPrice * 100);
-  const targetTime = new Date(now.getTime() + product.expiryMinutes * 60 * 1000 - (now.getTime() % 1000));
+  const targetTime = product.pickupDeadline && product.pickupDeadline.includes('-')
+    ? new Date(product.pickupDeadline)
+    : new Date(now.getTime() + product.expiryMinutes * 60 * 1000);
   const deadlineLabel = product.pickupDeadline
     ? `${formatDeadline(product.pickupDeadline)}까지 픽업`
     : '오늘 내 픽업 가능';
