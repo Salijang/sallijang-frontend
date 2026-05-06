@@ -19,6 +19,31 @@ export function CompletePage({ onNavigate, product, orderResult }: {
   const displayOrderNumber = orderResult?.orderNumber ?? '#PK-00000000-0000';
   const displayStoreName = orderResult?.storeName ?? product?.shopName ?? '가게';
 
+  const handleKakaoShare = () => {
+    const kakao = (window as any).Kakao;
+    if (!kakao) return;
+    if (!kakao.isInitialized()) kakao.init('664b381a7fd1f39d2d90db9b1b3abd61');
+    kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: '살리장 예약 완료 🎉',
+        description: `${product?.name} | ${displayStoreName}\n예약번호: #${displayOrderNumber}`,
+        imageUrl: product?.imageUrl,
+        link: {
+          mobileWebUrl: 'https://app.sallijang.shop',
+          webUrl: 'https://app.sallijang.shop',
+        },
+      },
+      buttons: [{
+        title: '살리장 앱 보기',
+        link: {
+          mobileWebUrl: 'https://app.sallijang.shop',
+          webUrl: 'https://app.sallijang.shop',
+        },
+      }],
+    });
+  };
+
   return (
     <div className="flex flex-col items-center p-6 h-full bg-white pt-20">
       {/* Animated Check */}
@@ -63,7 +88,7 @@ export function CompletePage({ onNavigate, product, orderResult }: {
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        <button className="w-full bg-[#FFE400] text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2">
+        <button onClick={handleKakaoShare} className="w-full bg-[#FFE400] text-black font-bold py-4 rounded-xl flex justify-center items-center gap-2">
           <span className="text-xl">💬</span> 카카오톡으로 공유
         </button>
         <button onClick={() => onNavigate('reservations')} className="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl">

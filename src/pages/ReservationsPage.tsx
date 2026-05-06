@@ -70,13 +70,34 @@ export function ReservationsPage({
 
   useEffect(() => {
     if (userRole !== 'SELLER' || !storeId) return;
-    const id = setInterval(async () => {
+
+    const es = new EventSource(
+      `https://api.sallijang.shop/api/v1/orders/stream?store_id=${storeId}`,
+      { withCredentials: true },
+    );
+    let connected = false;
+    es.onopen = () => {
+      if (connected) {
+        // 재연결 시 목록 재동기화
+        authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`)
+          .then(r => r.ok ? r.json() : [])
+          .then(setOrders)
+          .catch(() => {});
+      }
+      connected = true;
+    };
+    es.onmessage = (e) => {
       try {
-        const res = await authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`);
-        if (res.ok) setOrders(await res.json());
+        const event = JSON.parse(e.data);
+        if (event.event_type === 'new_order') {
+          setOrders(prev => prev.some(o => o.id === event.order.id) ? prev : [event.order, ...prev]);
+        } else if (event.event_type === 'order_removed') {
+          setOrders(prev => prev.filter(o => o.id !== event.order_id));
+        }
       } catch {}
-    }, 5_000);
-    return () => clearInterval(id);
+    };
+
+    return () => es.close();
   }, [userRole, storeId]);
 
   const handleCancel = async (orderId: number) => {

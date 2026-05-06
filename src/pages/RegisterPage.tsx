@@ -23,6 +23,10 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("🥩 정육");
 
+  const [imagePreview, setImagePreview] = useState("");
+  const [imageCdnUrl, setImageCdnUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+
   const [attempted, setAttempted] = useState(false);
 
   // 10원 단위를 버리고 100원 단위로 맞춤 (예: 5850원 -> 5800원)
@@ -91,7 +95,7 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
             expiry_minutes: calcExpiryMinutes(time),
             pickup_deadline: buildDeadline(time),
             category,
-            image_url: "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+            image_url: imageCdnUrl || null,
             weight,
             description
           })
@@ -109,6 +113,30 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
     }
   };
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImagePreview(URL.createObjectURL(file));
+    setUploading(true);
+    try {
+      const res = await authFetch(
+        `https://api.sallijang.shop/api/v1/products/upload-url?file_type=${encodeURIComponent(file.type)}`
+      );
+      const { upload_url, cdn_url } = await res.json();
+      await fetch(upload_url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      setImageCdnUrl(cdn_url);
+    } catch {
+      alert("이미지 업로드에 실패했습니다.");
+      setImagePreview("");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getBorderClass = (val: any) => {
     if (attempted && !val) return "border-red-500 focus:border-red-500 bg-red-50";
     return "border-gray-200 focus:border-[#FFE400] bg-gray-50";
@@ -123,10 +151,17 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
 
       <div className="p-4 flex flex-col gap-6">
         {/* Image Upload Component */}
-        <div className="border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl h-32 flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer hover:bg-gray-100 transition-colors">
-          <span className="text-2xl">📷</span>
-          <span className="font-bold text-sm">상품 사진 등록</span>
-        </div>
+        <label className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl h-32 flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
+          {imagePreview ? (
+            <img src={imagePreview} alt="상품 사진" className="w-full h-full object-cover rounded-xl" />
+          ) : (
+            <>
+              <span className="text-2xl">📷</span>
+              <span className="font-bold text-sm">{uploading ? "업로드 중..." : "상품 사진 등록"}</span>
+            </>
+          )}
+          <input type="file" accept="image/*" onChange={handleImageSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+        </label>
 
         {/* Input Form Groups */}
         <div className="flex flex-col gap-4">
