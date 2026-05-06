@@ -65,6 +65,6 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data "{
-            \"text\":\"🚨 SonarQube Security Alert\nRepository: sallijang-frontend\nOpen Security Issues: ${COUNT}건\nhttps://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
+            \"text\":\"🔍 SonarQube Security Alert\nRepository: sallijang-frontend\nOpen Security Issues: ${COUNT}건\nhttps://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
           }" \
           $SLACK_WEBHOOK_URL
