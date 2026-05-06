@@ -43,6 +43,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
 
   const [products, setProducts] = useState<Product[]>([]);
   useProductStream(setProducts);
+  const [locationName, setLocationName] = useState('내 위치');
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
   const userLocRef = useRef<{lat: number, lng: number} | null>(null);
   const [page, setPage] = useState(0);
@@ -112,7 +113,19 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => init(pos.coords.latitude, pos.coords.longitude),
+        pos => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          init(lat, lng);
+          (window as any).kakao.maps.load(() => {
+            const geocoder = new (window as any).kakao.maps.services.Geocoder();
+            geocoder.coord2RegionCode(lng, lat, (result: any, status: any) => {
+              if (status === (window as any).kakao.maps.services.Status.OK) {
+                const dong = result.find((r: any) => r.region_type === 'H');
+                if (dong) setLocationName(`${dong.region_1depth_name} ${dong.region_2depth_name} ${dong.region_3depth_name}`);
+              }
+            });
+          });
+        },
         err => { console.warn("Geolocation API Error:", err); init(37.556, 126.903); }
       );
     } else {
@@ -163,7 +176,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
           {!isSearching ? (
             <>
               <div className="flex items-center gap-2 font-bold text-lg w-full">
-                <span>📍</span> 서울 마포구 망원동 ▾
+                <span>📍</span> {locationName} ▾
               </div>
               <div className="flex items-center gap-4 text-xl shrink-0">
                 <button onClick={() => setIsSearching(true)} className="active:scale-95 transition-transform hover:scale-110">🔍</button>

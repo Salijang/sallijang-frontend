@@ -35,6 +35,8 @@ export interface Product {
   storeId?: number;
   storeAddress?: string;
   storeAddressDetail?: string;
+  storeLat?: number;
+  storeLng?: number;
   pickupDeadline?: string;
 }
 

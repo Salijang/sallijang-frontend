@@ -21,6 +21,8 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
   const [pickupExpectedAt, setPickupExpectedAt] = useState("20:00");
   const [wishlistItemId, setWishlistItemId] = useState<number | null>(null);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [storeCoords, setStoreCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const params = new URLSearchParams();
@@ -58,6 +60,8 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
           storeId: data.store_id,
           storeAddress: data.store_address,
           storeAddressDetail: data.store_address_detail ?? undefined,
+          storeLat: data.store_lat ? parseFloat(data.store_lat) : undefined,
+          storeLng: data.store_lng ? parseFloat(data.store_lng) : undefined,
           pickupDeadline: data.pickup_deadline,
         };
         setProduct(p);
@@ -93,6 +97,45 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
       })
       .catch(console.error);
   }, [product?.storeId, userId]);
+
+  useEffect(() => {
+    if (!product || !mapContainerRef.current) return;
+
+    const initMap = (lat: number, lng: number) => {
+      setStoreCoords({ lat, lng });
+      if (!mapContainerRef.current) return;
+      (window as any).kakao.maps.load(() => {
+        const position = new (window as any).kakao.maps.LatLng(lat, lng);
+        const map = new (window as any).kakao.maps.Map(mapContainerRef.current, {
+          center: position,
+          level: 4,
+        });
+        new (window as any).kakao.maps.Marker({ map, position, title: product.shopName });
+      });
+    };
+
+    if (product.storeLat && product.storeLng) {
+      initMap(product.storeLat, product.storeLng);
+    } else if (product.storeAddress) {
+      (window as any).kakao.maps.load(() => {
+        const geocoder = new (window as any).kakao.maps.services.Geocoder();
+        geocoder.addressSearch(product.storeAddress, (result: any, status: any) => {
+          if (status === (window as any).kakao.maps.services.Status.OK && result[0]) {
+            initMap(parseFloat(result[0].y), parseFloat(result[0].x));
+          }
+        });
+      });
+    }
+  }, [product]);
+
+  const handleNavigation = () => {
+    if (!product) return;
+    if (storeCoords) {
+      window.open(`https://map.kakao.com/link/to/${encodeURIComponent(product.shopName)},${storeCoords.lat},${storeCoords.lng}`);
+    } else if (product.storeAddress) {
+      window.open(`https://map.kakao.com/link/search/${encodeURIComponent(product.storeAddress)}`);
+    }
+  };
 
   const toggleWishlist = async () => {
     if (!product?.storeId || !userId || wishlistLoading) return;
@@ -264,8 +307,8 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
                 </div>
                 <div className="text-blue-600 font-bold text-base mt-1">{deadlineLabel}</div>
               </div>
-              <button className="px-6 py-3 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                지도에서 길 찾기
+              <button onClick={handleNavigation} className="px-6 py-3 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                🗺️ 카카오맵으로 길 찾기
               </button>
             </div>
 
@@ -393,11 +436,9 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
             </div>
             <div className="text-blue-600 font-bold text-sm mt-1">{deadlineLabel}</div>
           </div>
-          <div className="w-full h-24 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 font-bold">
-            지도
-          </div>
-          <button className="w-full py-2 border border-gray-300 rounded-lg font-bold text-gray-700">
-            길 찾기
+          <div ref={mapContainerRef} className="w-full h-40 rounded-xl overflow-hidden bg-gray-100" />
+          <button onClick={handleNavigation} className="w-full py-2 border border-gray-300 rounded-lg font-bold text-gray-700 active:scale-95 transition-transform">
+            🗺️ 카카오맵으로 길 찾기
           </button>
         </div>
 
