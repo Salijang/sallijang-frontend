@@ -17,70 +17,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check secret exists
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "SONAR_TOKEN is missing"
-            exit 1
-          else
-            echo "SONAR_TOKEN exists"
-          fi
-
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "SLACK_WEBHOOK_URL is missing"
-            exit 1
-          else
-            echo "SLACK_WEBHOOK_URL exists"
-          fi
 
       - name: Run SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=salijang
-            -Dsonar.projectKey=Salijang_sallijang-frontend
-            -Dsonar.sources=.
-            -Dsonar.host.url=https://sonarcloud.io
 
-      - name: Check Security Issues
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Get HIGH issue count
+        id: sonar
         run: |
-          curl -s -u "$SONAR_TOKEN:" \
-          "https://sonarcloud.io/api/issues/search?componentKeys=Salijang_sallijang-frontend&types=VULNERABILITY&resolved=false" \
-          > sonar-results.json
+          RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+          "https://sonarcloud.io/api/issues/search?componentKeys=Salijang_sallijang-frontend&severities=HIGH")
 
-          COUNT=$(jq '.total' sonar-results.json)
+          HIGH_COUNT=$(echo "$RESPONSE" | jq '.total')
 
-          HIGH_COUNT=$(jq '[.issues[] | select(.severity=="HIGH")] | length' sonar-results.json)
-
-          ISSUE=$(jq -r '.issues[] | select(.severity=="HIGH") | .message' sonar-results.json | head -n 1)
-
-          echo "COUNT=$COUNT" >> $GITHUB_ENV
           echo "HIGH_COUNT=$HIGH_COUNT" >> $GITHUB_ENV
-          echo "ISSUE=$ISSUE" >> $GITHUB_ENV
-
-          echo "Total Issues: $COUNT"
-          echo "High Issues: $HIGH_COUNT"
-          echo "Issue Message: $ISSUE"
 
       - name: Send Slack Alert
-        if: env.COUNT != '0'
+        if: env.HIGH_COUNT != '0'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data "{
-            \"text\":\"🔍 *SonarQube Security Alert*\n<@U0A5ZUZRT7A>\nRepository: sallijang-*frontend*\nHIGH Issues: ${HIGH_COUNT}건\nIssue: ${ISSUE}\n확인: https://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
+            \"text\":\"🔎 *SonarQube Security Alert*\n<@U0A5ZUZRT7A>\nRepository: sallijang-frontend\nHIGH Issues: ${HIGH_COUNT}건\n확인: https://sonarcloud.io/project/overview?id=Salijang_sallijang-frontend\"
           }" \
-          "$SLACK_WEBHOOK_URL"
+          $SLACK_WEBHOOK_URL
