@@ -213,6 +213,30 @@ export function usePendingOrderCount(storeId: number | null) {
 }
 
 // ==========================================
+// 상품 재고 실시간 업데이트 훅
+// ==========================================
+export function useProductStream(
+  setProducts: React.Dispatch<React.SetStateAction<any[]>>,
+) {
+  useEffect(() => {
+    const es = new EventSource(
+      'https://api.sallijang.shop/api/v1/products/stream',
+    );
+    es.onmessage = (e) => {
+      try {
+        const { product_id, remaining } = JSON.parse(e.data);
+        setProducts(prev =>
+          remaining <= 0
+            ? prev.filter(p => p.id !== product_id)
+            : prev.map(p => p.id === product_id ? { ...p, remaining } : p),
+        );
+      } catch {}
+    };
+    return () => es.close();
+  }, [setProducts]);
+}
+
+// ==========================================
 // 하단 탭 바 컴포넌트
 // ==========================================
 export function BottomTabBar({ currentPage, onNavigate, userRole, isPcVersion, pendingOrderCount }: { currentPage: Page, onNavigate: (page: Page) => void, userRole: 'USER' | 'SELLER', isPcVersion?: boolean, pendingOrderCount?: number }) {

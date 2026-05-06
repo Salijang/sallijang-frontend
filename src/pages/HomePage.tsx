@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { formatCountdown } from '../utils/timeUtils';
-import { useNotifications, NotificationDrawer } from '../components/SharedComponents';
+import { useNotifications, NotificationDrawer, useProductStream } from '../components/SharedComponents';
 import type { Product } from '../types';
 
 export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVersion, userId }: {
@@ -37,6 +37,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotif, setShowNotif] = useState(false);
   const { unreadCount } = useNotifications(userId ?? null);
+  useProductStream(setProducts);
 
   const selectedCategoryRef = useRef(selectedCategory);
   selectedCategoryRef.current = selectedCategory;
