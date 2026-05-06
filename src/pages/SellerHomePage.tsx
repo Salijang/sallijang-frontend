@@ -13,7 +13,7 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
   const [noticeExpanded, setNoticeExpanded] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [stats, setStats] = useState<SalesStats | null>(null);
-  const { unreadCount } = useNotifications(userId ?? null, 5_000);
+  const { unreadCount } = useNotifications(userId ?? null);
 
   useEffect(() => {
     if (!storeId) return;
