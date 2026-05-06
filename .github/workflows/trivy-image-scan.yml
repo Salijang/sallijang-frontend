@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - '.github/workflows/trivy-image-scan.yml'
 
 jobs:
   trivy-image-scan:
