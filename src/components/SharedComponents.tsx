@@ -49,16 +49,8 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(h / 24)}일 전`;
 }
 
-export function useNotifications(userId: number | null, interval = 30_000) {
+export function useNotifications(userId: number | null) {
   const [notifications, setNotifications] = useState<ApiNotif[]>([]);
-
-  const fetchNotifications = async () => {
-    if (!userId) return;
-    try {
-      const res = await authFetch(`${NOTIFY_BASE}/`);
-      if (res.ok) setNotifications(await res.json());
-    } catch {}
-  };
 
   const markRead = async (id: number) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
@@ -72,10 +64,28 @@ export function useNotifications(userId: number | null, interval = 30_000) {
   };
 
   useEffect(() => {
-    fetchNotifications();
-    const id = setInterval(fetchNotifications, interval);
-    return () => clearInterval(id);
-  }, [userId, interval]);
+    if (!userId) return;
+
+    const fetchAll = () =>
+      authFetch(`${NOTIFY_BASE}/`).then(r => r.ok ? r.json() : []).then(setNotifications).catch(() => {});
+
+    fetchAll();
+
+    const es = new EventSource(`${NOTIFY_BASE}/stream`, { withCredentials: true });
+    let connected = false;
+    es.onopen = () => {
+      if (connected) fetchAll(); // 재연결 시 전체 재동기화
+      connected = true;
+    };
+    es.onmessage = (e) => {
+      try {
+        const notif: ApiNotif = JSON.parse(e.data);
+        setNotifications(prev => [notif, ...prev.slice(0, 49)]);
+      } catch {}
+    };
+
+    return () => es.close();
+  }, [userId]);
 
   return { notifications, unreadCount: notifications.filter(n => !n.is_read).length, markRead, markAllRead };
 }
@@ -170,14 +180,33 @@ export function usePendingOrderCount(storeId: number | null) {
 
   useEffect(() => {
     if (!storeId) return;
-    const fetch_ = () =>
+
+    const fetchCount = () =>
       authFetch(`https://api.sallijang.shop/api/v1/orders/?status=pending&store_id=${storeId}`)
         .then(r => r.ok ? r.json() : [])
         .then((orders: unknown[]) => setCount(orders.length))
         .catch(() => {});
-    fetch_();
-    const id = setInterval(fetch_, 5_000);
-    return () => clearInterval(id);
+
+    fetchCount();
+
+    const es = new EventSource(
+      `https://api.sallijang.shop/api/v1/orders/stream?store_id=${storeId}`,
+      { withCredentials: true },
+    );
+    let connected = false;
+    es.onopen = () => {
+      if (connected) fetchCount(); // 재연결 시 카운트 재동기화
+      connected = true;
+    };
+    es.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        if (event.event_type === 'new_order') setCount(prev => prev + 1);
+        else if (event.event_type === 'order_removed') setCount(prev => Math.max(0, prev - 1));
+      } catch {}
+    };
+
+    return () => es.close();
   }, [storeId]);
 
   return count;
