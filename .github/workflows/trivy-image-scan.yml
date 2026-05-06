@@ -34,6 +34,6 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{
-            "text":"🚨 Trivy Image Security Alert\nRepository: sallijang-frontend\nHIGH/CRITICAL 이미지 취약점 발견됨\n확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            "text":"🐳 Trivy Image Security Alert\nRepository: sallijang-frontend\nHIGH/CRITICAL 이미지 취약점 발견됨\n확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           }' \
           "$SLACK_WEBHOOK_URL"
