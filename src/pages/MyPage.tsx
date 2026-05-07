@@ -171,7 +171,7 @@ export function MyPage({ onNavigate, userRole, userId, storeId, userName }: {
               <span className="text-gray-600 text-xs font-bold">포인트</span>
               <span className="font-extrabold text-sm text-gray-400">준비중</span>
             </div>
-            <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity">
+            <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => onNavigate('wishlist')}>
               <span className="text-2xl">❤️</span>
               <span className="text-gray-600 text-xs font-bold">찜한가게</span>
               <span className="font-extrabold text-sm">{wishlistCount !== null ? `${wishlistCount}곳` : '-'}</span>

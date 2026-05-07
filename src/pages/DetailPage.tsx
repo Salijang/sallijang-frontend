@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Product } from '../types';
 import { formatCountdown } from '../utils/timeUtils';
 import { authFetch } from '../utils/authFetch';
+import { getCategoryImage } from '../utils/categoryImage';
 
 /**
  * 특정 상품의 상세 정보를 확인하고 픽업 예약 수량을 설정하는 상세 페이지.
@@ -52,7 +53,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
           totalQuantity: data.total_quantity,
           expiryMinutes: data.expiry_minutes,
           category: data.category,
-          imageUrl: data.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+          imageUrl: getCategoryImage(data.category, data.image_url),
           weight: data.weight,
           description: data.description,
           shopName: data.shop_name || "알 수 없는 가게",

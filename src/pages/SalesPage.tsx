@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page, Product } from '../types';
 import { authFetch } from '../utils/authFetch';
+import { getCategoryImage } from '../utils/categoryImage';
 
 /**
  * 판매자가 등록한 상품을 관리하는 페이지.
@@ -23,7 +24,7 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
               totalQuantity: d.total_quantity,
               expiryMinutes: d.expiry_minutes,
               category: d.category,
-              imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+              imageUrl: getCategoryImage(d.category, d.image_url),
               weight: d.weight,
               description: d.description,
               shopName: d.shop_name || "내 가게",

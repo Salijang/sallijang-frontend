@@ -128,9 +128,7 @@ export function MapPage({
     };
 
     const fetchAndBuild = (userLat: number, userLng: number) => {
-      const fetchLat = targetStore?.lat ?? userLat;
-      const fetchLng = targetStore?.lng ?? userLng;
-      fetch(`https://api.sallijang.shop/api/v1/products/?user_lat=${fetchLat}&user_lng=${fetchLng}`)
+      fetch(`https://api.sallijang.shop/api/v1/products/?user_lat=${userLat}&user_lng=${userLng}`)
         .then(res => res.json())
         .then(data => {
           const products: ProductWithCoords[] = data.map((d: any) => ({
