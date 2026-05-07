@@ -131,9 +131,11 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
         headers: { "Content-Type": file.type },
       });
       setImageCdnUrl(cdn_url);
+      console.log('[AI] S3 업로드 완료, analyze 시작:', cdn_url);
 
       setAnalyzing(true);
       try {
+        console.log('[AI] analyze-image 호출 중...');
         const analyzeRes = await authFetch('https://api.sallijang.shop/api/v1/products/analyze-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
