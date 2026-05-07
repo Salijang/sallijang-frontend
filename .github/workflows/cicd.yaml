@@ -4,6 +4,10 @@ on:
   push:
     branches: [ "main", "dev_yji" ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,30 +27,31 @@ jobs:
           npm install
           npm run build
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::594486941613:role/pickup-github-actions-role
+          aws-region: ap-northeast-2
 
-      # dist/ → S3 프론트엔드 버킷 동기화
-      # --delete: S3에만 남아있는 구버전 파일 제거
+      - name: Read deploy config from SSM
+        run: |
+          BUCKET=$(aws ssm get-parameter --name /pickup/prod/s3/frontend-bucket-name --query Parameter.Value --output text)
+          DISTRIBUTION_ID=$(aws ssm get-parameter --name /pickup/prod/cloudfront/frontend-distribution-id --query Parameter.Value --output text)
+          echo "FRONTEND_BUCKET=$BUCKET" >> $GITHUB_ENV
+          echo "CLOUDFRONT_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+
       - name: Upload to S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+          aws s3 sync dist/ s3://${{ env.FRONTEND_BUCKET }} \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html"
 
-          # index.html은 짧은 캐시 (CloudFront TTL 5분과 일치)
-          aws s3 cp dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
+          aws s3 cp dist/index.html s3://${{ env.FRONTEND_BUCKET }}/index.html \
             --cache-control "public, max-age=300"
 
-      # 배포 후 CloudFront 캐시 무효화
-      # index.html만 무효화 — 나머지 정적 자산은 파일명에 해시가 포함되어 자동 갱신
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/index.html"
