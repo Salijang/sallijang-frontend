@@ -22,7 +22,7 @@ export function CompletePage({ onNavigate, product, orderResult }: {
   const handleKakaoShare = () => {
     const kakao = (window as any).Kakao;
     if (!kakao) return;
-    if (!kakao.isInitialized()) kakao.init('664b381a7fd1f39d2d90db9b1b3abd61');
+    if (!kakao.isInitialized()) kakao.init('e5375a6d698b46fe9301c855d8a69487');
     kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
