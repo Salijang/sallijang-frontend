@@ -33,13 +33,34 @@ jobs:
           ignore-unfixed: true
           severity: 'HIGH,CRITICAL'
 
-      - name: Send Slack alert on failure
-        if: failure()
+      - name: Send Slack alert on Trivy failure
+        if: steps.trivy_scan.outcome == 'failure'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data '{
-            "text":"🐳 Trivy Image Security Alert\nRepository: sallijang-frontend\nHIGH/CRITICAL 이미지 취약점 발견됨\n확인: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          }' \
-          "$SLACK_WEBHOOK_URL"
+          ISSUE="HIGH/CRITICAL 이미지 보안 이슈가 발견되었습니다."
+
+          if [ -f trivy-image-results.txt ]; then
+            FOUND_ISSUE=$(grep -m 1 "HIGH" trivy-image-results.txt || true)
+
+            if [ -z "$FOUND_ISSUE" ]; then
+              FOUND_ISSUE=$(grep -m 1 "CRITICAL" trivy-image-results.txt || true)
+            fi
+
+            if [ -n "$FOUND_ISSUE" ]; then
+              ISSUE="$FOUND_ISSUE"
+            fi
+          fi
+
+          jq -n \
+            --arg text "🛡️ *Trivy Image Security Alert*
+              <@U0A5ZUZRT7A>
+              Repository: sallijang-*frontend*
+              ${ISSUE}
+              확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                          '{text: $text}' > slack-payload.json
+
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            --data @slack-payload.json \
+            "$SLACK_WEBHOOK_URL"
