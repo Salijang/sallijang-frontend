@@ -56,12 +56,17 @@ export function MapPage({
 
   useEffect(() => {
     const buildMap = (userLat: number, userLng: number, products: ProductWithCoords[]) => {
+      console.log('[Map] window.kakao:', typeof (window as any).kakao);
+      console.log('[Map] window.kakao.maps:', typeof (window as any).kakao?.maps);
+      console.log('[Map] window.kakao.maps.load:', typeof (window as any).kakao?.maps?.load);
       if (!window?.kakao?.maps?.load) {
+        console.error('[Map] kakao.maps.load 없음 - SDK 로드 실패');
         setIsLocating(false);
         return;
       }
       window.kakao.maps.load(() => {
-        if (!mapRef.current) return;
+        console.log('[Map] kakao.maps.load 콜백 실행됨');
+        if (!mapRef.current) { console.error('[Map] mapRef.current 없음'); return; }
 
         const centerLat = targetStore?.lat ?? userLat;
         const centerLng = targetStore?.lng ?? userLng;
