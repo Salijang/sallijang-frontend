@@ -56,9 +56,11 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
       <div className="px-5 py-2 flex flex-col gap-5">
         <div className="mt-1">
           <div className="text-gray-500 font-bold mb-1 flex items-center gap-1.5 text-[13px]">
-            <span>2024. 11. 19 (화)</span>
-            <span>·</span>
-            <span>☀️ 20.2°</span>
+            <span>{(() => {
+              const d = new Date();
+              const days = ['일', '월', '화', '수', '목', '금', '토'];
+              return `${d.getFullYear()}. ${String(d.getMonth() + 1).padStart(2, '0')}. ${String(d.getDate()).padStart(2, '0')} (${days[d.getDay()]})`;
+            })()}</span>
           </div>
           <h2 className="text-[21px] font-black text-gray-900 tracking-tight leading-snug">{userName || '사장'}님을 언제나 응원해요!</h2>
         </div>

@@ -12,7 +12,6 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
   const [slackEnabled, setSlackEnabled] = useState(true);
   const [orderEnabled, setOrderEnabled] = useState(true);
   const [reviewEnabled, setReviewEnabled] = useState(true);
-  const [marketingEnabled, setMarketingEnabled] = useState(false);
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
   const [webhookSaved, setWebhookSaved] = useState(false);
 
@@ -24,20 +23,21 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
         if (data) {
           setOrderEnabled(data.new_order);
           setReviewEnabled(data.review);
+          setSlackEnabled(data.slack_enabled);
           setSlackWebhookUrl(data.slack_webhook_url || '');
         }
       })
       .catch(console.error);
   }, [isSeller, userId]);
 
-  const saveSetting = useCallback((key: 'new_order' | 'review', value: boolean) => {
-    if (!isSeller || !userId) return;
+  const saveSetting = useCallback((key: 'new_order' | 'review' | 'slack_enabled', value: boolean) => {
+    if (!userId) return;
     authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),
     }).catch(console.error);
-  }, [isSeller, userId]);
+  }, [userId]);
 
   const saveWebhookUrl = useCallback(() => {
     if (!userId) return;
@@ -74,7 +74,11 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
               <div className="font-bold text-sm">슬랙(Slack) 알림</div>
               <p className="text-xs text-gray-500 mt-1">{isSeller ? '신규 주문 알림을 슬랙으로 받아보세요.' : '주문 및 공지사항을 슬랙으로 받아보세요.'}</p>
             </div>
-            <Toggle enabled={slackEnabled} onToggle={() => setSlackEnabled(v => !v)} />
+            <Toggle enabled={slackEnabled} onToggle={() => {
+              const next = !slackEnabled;
+              setSlackEnabled(next);
+              saveSetting('slack_enabled', next);
+            }} />
           </div>
           {slackEnabled && (
             <div className="mt-2 flex flex-col gap-2">
@@ -132,27 +136,24 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-sm">주문 및 쇼핑 알림</div>
-                    <p className="text-xs text-gray-500 mt-1">결제, 취소, 배송 등 쇼핑 필수 정보를 알립니다.</p>
+                    <p className="text-xs text-gray-500 mt-1">픽업 완료, 픽업 리마인더, 주문 취소 알림을 받습니다.</p>
                   </div>
-                  <Toggle enabled={orderEnabled} onToggle={() => setOrderEnabled(v => !v)} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-sm">이벤트 및 혜택 알림</div>
-                    <p className="text-xs text-gray-500 mt-1">다양한 이벤트와 쿠폰 소식을 알려드립니다.</p>
-                  </div>
-                  <Toggle enabled={marketingEnabled} onToggle={() => setMarketingEnabled(v => !v)} />
+                  <Toggle enabled={orderEnabled} onToggle={() => {
+                    const next = !orderEnabled;
+                    setOrderEnabled(next);
+                    saveSetting('new_order', next);
+                  }} />
                 </div>
               </>
             )}
           </div>
         </section>
 
-        <div className="pt-10 border-t border-gray-50 text-center">
-          <p className="text-[10px] text-gray-400">
-            {isSeller ? '신규 주문 알림은 가게 운영 시간에만 발송됩니다.' : '알림 설정 시 야간(21시~08시)에는 발송되지 않습니다.'}
-          </p>
-        </div>
+        {isSeller && (
+          <div className="pt-10 border-t border-gray-50 text-center">
+            <p className="text-[10px] text-gray-400">신규 주문 알림은 가게 운영 시간에만 발송됩니다.</p>
+          </div>
+        )}
       </div>
     </div>
   );

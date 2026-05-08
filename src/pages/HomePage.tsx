@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { formatCountdown } from '../utils/timeUtils';
+import { getCategoryImage } from '../utils/categoryImage';
 import { useNotifications, NotificationDrawer, useProductStream } from '../components/SharedComponents';
 import type { Product } from '../types';
 
@@ -63,7 +64,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
     totalQuantity: d.total_quantity,
     expiryMinutes: d.expiry_minutes,
     category: d.category,
-    imageUrl: d.image_url || "https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600",
+    imageUrl: getCategoryImage(d.category, d.image_url),
     weight: d.weight,
     description: d.description,
     shopName: d.shop_name || "알 수 없는 가게",
