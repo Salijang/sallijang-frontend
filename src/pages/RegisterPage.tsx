@@ -26,6 +26,8 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
   const [imagePreview, setImagePreview] = useState("");
   const [imageCdnUrl, setImageCdnUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiGenerated, setAiGenerated] = useState(false);
 
   const [attempted, setAttempted] = useState(false);
 
@@ -129,6 +131,28 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
         headers: { "Content-Type": file.type },
       });
       setImageCdnUrl(cdn_url);
+      console.log('[AI] S3 업로드 완료, analyze 시작:', cdn_url);
+
+      setAnalyzing(true);
+      try {
+        console.log('[AI] analyze-image 호출 중...');
+        const analyzeRes = await authFetch('https://api.sallijang.shop/api/v1/products/analyze-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: cdn_url }),
+        });
+        if (analyzeRes.ok) {
+          const ai = await analyzeRes.json();
+          if (ai.name) setName(ai.name);
+          if (ai.description) setDescription(ai.description);
+          if (ai.category) setCategory(ai.category);
+          setAiGenerated(true);
+        }
+      } catch {
+        // AI 분석 실패해도 등록 계속 가능
+      } finally {
+        setAnalyzing(false);
+      }
     } catch {
       alert("이미지 업로드에 실패했습니다.");
       setImagePreview("");
@@ -153,7 +177,15 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
         {/* Image Upload Component */}
         <label className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl aspect-square flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
           {imagePreview ? (
-            <img src={imagePreview} alt="상품 사진" className="w-full h-full object-cover rounded-xl" />
+            <>
+              <img src={imagePreview} alt="상품 사진" className="w-full h-full object-cover rounded-xl" />
+              {(uploading || analyzing) && (
+                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1 rounded-xl">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="text-white text-xs font-bold">{analyzing ? "AI 분석 중..." : "업로드 중..."}</span>
+                </div>
+              )}
+            </>
           ) : (
             <>
               <span className="text-2xl">📷</span>
@@ -162,6 +194,12 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
           )}
           <input type="file" accept="image/*" onChange={handleImageSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         </label>
+        {aiGenerated && !analyzing && (
+          <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 -mt-3">
+            <span className="text-sm">✨</span>
+            <span className="text-indigo-700 font-bold text-xs">AI가 상품 정보를 자동으로 입력했어요. 확인 후 수정하세요.</span>
+          </div>
+        )}
 
         {/* Input Form Groups */}
         <div className="flex flex-col gap-4">
