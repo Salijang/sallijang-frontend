@@ -32,11 +32,18 @@ export function NotificationSettingsPage({ onNavigate, userRole, userId }: {
 
   const saveSetting = useCallback((key: 'new_order' | 'review' | 'slack_enabled', value: boolean) => {
     if (!userId) return;
+    const revert = () => {
+      if (key === 'slack_enabled') setSlackEnabled(!value);
+      if (key === 'new_order') setOrderEnabled(!value);
+      if (key === 'review') setReviewEnabled(!value);
+    };
     authFetch(`https://api.sallijang.shop/api/v1/notifications/settings/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),
-    }).catch(console.error);
+    })
+      .then(r => { if (!r.ok) revert(); })
+      .catch(() => revert());
   }, [userId]);
 
   const saveWebhookUrl = useCallback(() => {
