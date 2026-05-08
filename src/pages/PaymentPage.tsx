@@ -76,14 +76,18 @@ export function PaymentPage({ product, quantity = 1, cartEntries, cartShopName, 
         body: JSON.stringify(orderPayload),
       });
 
-      if (response.status === 409 || response.status === 503) {
-        const errorData = await response.json();
-        alert(errorData.detail ?? '주문을 처리할 수 없습니다. 다시 시도해주세요.');
-        return;
-      }
-
       if (!response.ok) {
-        throw new Error('주문 생성에 실패했습니다.');
+        const errorData = await response.json().catch(() => null);
+        console.error('[Order] 실패 status:', response.status, 'body:', errorData);
+        if (response.status === 409 || response.status === 503) {
+          alert(errorData?.detail ?? '주문을 처리할 수 없습니다. 다시 시도해주세요.');
+          return;
+        }
+        if (response.status === 422) {
+          alert('입력값을 확인해주세요: ' + (errorData?.detail?.[0]?.msg ?? JSON.stringify(errorData)));
+          return;
+        }
+        throw new Error(`주문 생성 실패 (${response.status}): ${errorData?.detail ?? '알 수 없는 오류'}`);
       }
 
       const orderData = await response.json();
