@@ -24,7 +24,7 @@ export function SalesPage({ onNavigate, storeId }: { onNavigate: (page: Page) =>
               totalQuantity: d.total_quantity,
               expiryMinutes: d.expiry_minutes,
               category: d.category,
-              imageUrl: getCategoryImage(d.category, d.image_url),
+              imageUrl: getCategoryImage(d.category, d.image_url, 'thumb'),
               weight: d.weight,
               description: d.description,
               shopName: d.shop_name || "내 가게",

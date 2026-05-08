@@ -115,7 +115,7 @@ export function ReservationsPage({
       missingIds.map(pid =>
         fetch(`https://api.sallijang.shop/api/v1/products/${pid}`)
           .then(r => r.ok ? r.json() : null)
-          .then(data => data ? { id: pid, url: getCategoryImage(data.category, data.image_url) } : null)
+          .then(data => data ? { id: pid, url: getCategoryImage(data.category, data.image_url, 'thumb') } : null)
           .catch(() => null)
       )
     ).then(results => {

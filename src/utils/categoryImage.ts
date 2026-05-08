@@ -8,7 +8,10 @@ const CATEGORY_IMAGES: Record<string, string> = {
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1607532941433-304659e8198a?auto=format&fit=crop&q=80&w=600';
 
-export function getCategoryImage(category: string, imageUrl?: string | null): string {
-  if (imageUrl) return imageUrl;
+export function getCategoryImage(category: string, imageUrl?: string | null, size?: 'thumb' | 'medium'): string {
+  if (imageUrl) {
+    if (size) return imageUrl.replace(/\/products\/(?!thumb\/|medium\/)/, `/products/${size}/`);
+    return imageUrl;
+  }
   return CATEGORY_IMAGES[category] ?? DEFAULT_IMAGE;
 }

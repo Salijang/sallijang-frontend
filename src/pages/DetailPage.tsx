@@ -58,7 +58,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
           totalQuantity: data.total_quantity,
           expiryMinutes: data.expiry_minutes,
           category: data.category,
-          imageUrl: getCategoryImage(data.category, data.image_url),
+          imageUrl: getCategoryImage(data.category, data.image_url, 'medium'),
           weight: data.weight,
           description: data.description,
           shopName: data.shop_name || "알 수 없는 가게",

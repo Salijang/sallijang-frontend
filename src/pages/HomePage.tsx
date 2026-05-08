@@ -64,7 +64,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
     totalQuantity: d.total_quantity,
     expiryMinutes: d.expiry_minutes,
     category: d.category,
-    imageUrl: getCategoryImage(d.category, d.image_url),
+    imageUrl: getCategoryImage(d.category, d.image_url, 'thumb'),
     weight: d.weight,
     description: d.description,
     shopName: d.shop_name || "알 수 없는 가게",
