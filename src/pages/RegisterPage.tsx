@@ -147,6 +147,9 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
           if (ai.description) setDescription(ai.description);
           if (ai.category) setCategory(ai.category);
           setAiGenerated(true);
+        } else if (analyzeRes.status === 422) {
+          const err = await analyzeRes.json();
+          alert(err.detail ?? "음식 사진이 아닙니다. 음식 또는 식재료 사진을 업로드해 주세요.");
         }
       } catch {
         // AI 분석 실패해도 등록 계속 가능
