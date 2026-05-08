@@ -282,8 +282,11 @@ export function ReservationsPage({
                 onClick={() => setSelectedOrder(order)}
                 className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 cursor-pointer hover:border-[#FFE400] hover:shadow-md transition-all relative overflow-hidden group"
               >
-                <div className="w-12 h-12 bg-[#FFFBE6] rounded-xl shrink-0 flex items-center justify-center text-2xl border border-yellow-100">
-                  🛍️
+                <div className="w-12 h-12 bg-[#FFFBE6] rounded-xl shrink-0 overflow-hidden border border-yellow-100">
+                  {productImages[order.items[0]?.product_id ?? -1]
+                    ? <img src={productImages[order.items[0].product_id!]} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-2xl">🛍️</div>
+                  }
                 </div>
                 <div className="flex-1 flex flex-col justify-center gap-1">
                   <div className="flex justify-between items-start">

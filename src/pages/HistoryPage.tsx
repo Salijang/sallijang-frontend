@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ReservationCard } from '../components/SharedComponents';
 import { authFetch } from '../utils/authFetch';
+import { getCategoryImage } from '../utils/categoryImage';
 
 interface OrderItem {
   id: number;
@@ -39,6 +40,8 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
   const isSeller = !!storeId && !buyerId;
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [productImages, setProductImages] = useState<Record<number, string>>({});
+  const fetchedProductIds = useRef<Set<number>>(new Set());
   const [reviewingItem, setReviewingItem] = useState<{
     name: string; shop: string; quantity?: number;
     orderId: number; storeId: number;
@@ -66,6 +69,28 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
     };
     fetchHistory();
   }, [buyerId, storeId]);
+
+  useEffect(() => {
+    const missingIds = [...new Set(
+      orders.flatMap(o => o.items.map(i => i.product_id).filter((id): id is number => id !== null))
+    )].filter(id => !fetchedProductIds.current.has(id));
+
+    if (missingIds.length === 0) return;
+    missingIds.forEach(id => fetchedProductIds.current.add(id));
+
+    Promise.all(
+      missingIds.map(pid =>
+        fetch(`https://api.sallijang.shop/api/v1/products/${pid}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => data ? { id: pid, url: getCategoryImage(data.category, data.image_url, 'thumb') } : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const updates: Record<number, string> = {};
+      results.forEach(r => { if (r) updates[r.id] = r.url; });
+      if (Object.keys(updates).length > 0) setProductImages(prev => ({ ...prev, ...updates }));
+    });
+  }, [orders]);
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -137,7 +162,7 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
                 shop={order.store_name}
                 time={timeLabel}
                 id={`#${order.order_number}`}
-                imageUrl=""
+                imageUrl={productImages[order.items[0]?.product_id ?? -1] ?? ""}
                 onReview={cardStatus === '완료' && !reviewedOrderIds.has(order.id) ? () => setReviewingItem({
                   name: order.items.map(i => i.product_name).join(', '),
                   shop: order.store_name,
