@@ -18,6 +18,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
   userId?: number | null;
 }) {
   const [product, setProduct] = useState<Product | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [pickupExpectedAt, setPickupExpectedAt] = useState("20:00");
   const [wishlistItemId, setWishlistItemId] = useState<number | null>(null);
@@ -42,8 +43,12 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
 
     function doFetch(p: URLSearchParams) {
       fetch(`https://api.sallijang.shop/api/v1/products/${productId}${p.toString() ? '?' + p.toString() : ''}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) { setNotFound(true); return null; }
+        return res.json();
+      })
       .then(data => {
+        if (!data) return;
         const p: Product = {
           id: data.id,
           name: data.name,
@@ -210,6 +215,20 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
       setPickupExpectedAt(firstSlot);
     }
   }, [firstSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (notFound) return (
+    <div className="flex flex-col items-center justify-center min-h-full p-10 gap-4 text-center">
+      <div className="text-5xl">🚫</div>
+      <p className="text-gray-800 font-extrabold text-xl">판매가 종료된 상품입니다</p>
+      <p className="text-gray-500 text-sm">판매자가 해당 상품을 삭제했어요.</p>
+      <button
+        onClick={onBack}
+        className="mt-2 px-6 py-3 bg-[#FFE400] text-black font-extrabold rounded-xl active:scale-95 transition-transform"
+      >
+        홈으로 돌아가기
+      </button>
+    </div>
+  );
 
   if (!product) return <div className="p-10 flex justify-center text-gray-500 font-bold">로딩 중...</div>;
 
