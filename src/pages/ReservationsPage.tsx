@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ReservationCard } from '../components/SharedComponents';
 import { authFetch } from '../utils/authFetch';
+import { getCategoryImage } from '../utils/categoryImage';
 
 interface OrderItem {
   id: number;
@@ -41,6 +42,8 @@ export function ReservationsPage({
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [productImages, setProductImages] = useState<Record<number, string>>({});
+  const fetchedProductIds = useRef<Set<number>>(new Set());
 
   const fetchOrders = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -99,6 +102,28 @@ export function ReservationsPage({
 
     return () => es.close();
   }, [userRole, storeId]);
+
+  useEffect(() => {
+    const missingIds = [...new Set(
+      orders.flatMap(o => o.items.map(i => i.product_id).filter((id): id is number => id !== null))
+    )].filter(id => !fetchedProductIds.current.has(id));
+
+    if (missingIds.length === 0) return;
+    missingIds.forEach(id => fetchedProductIds.current.add(id));
+
+    Promise.all(
+      missingIds.map(pid =>
+        fetch(`https://api.sallijang.shop/api/v1/products/${pid}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => data ? { id: pid, url: getCategoryImage(data.category, data.image_url) } : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const updates: Record<number, string> = {};
+      results.forEach(r => { if (r) updates[r.id] = r.url; });
+      if (Object.keys(updates).length > 0) setProductImages(prev => ({ ...prev, ...updates }));
+    });
+  }, [orders]);
 
   const handleCancel = async (orderId: number) => {
     if (!window.confirm('정말 취소하겠습니까?')) return;
@@ -320,7 +345,7 @@ export function ReservationsPage({
                 shop={order.store_name}
                 time={order.pickup_expected_at ? `픽업 예정: ${formatPickupExpected(order.pickup_expected_at)}` : '-'}
                 id={`#${order.order_number}`}
-                imageUrl=""
+                imageUrl={productImages[order.items[0]?.product_id ?? -1] ?? ""}
                 onCancel={() => handleCancel(order.id)}
               />
               <div className="text-xs text-gray-400 font-bold px-2">
