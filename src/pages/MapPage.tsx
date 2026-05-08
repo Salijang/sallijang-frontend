@@ -148,16 +148,12 @@ export function MapPage({
         pos => { setIsLocating(false); fetchAndBuild(pos.coords.latitude, pos.coords.longitude); },
         () => {
           setIsLocating(false);
-          const fallbackLat = targetStore?.lat ?? 37.556;
-          const fallbackLng = targetStore?.lng ?? 126.903;
-          fetchAndBuild(fallbackLat, fallbackLng);
+          fetchAndBuild(37.5665, 126.9780);
         }
       );
     } else {
       setIsLocating(false);
-      const fallbackLat = targetStore?.lat ?? 37.556;
-      const fallbackLng = targetStore?.lng ?? 126.903;
-      fetchAndBuild(fallbackLat, fallbackLng);
+      fetchAndBuild(37.5665, 126.9780);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

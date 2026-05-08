@@ -151,7 +151,7 @@ export function RegisterPage({ onNavigate, storeId }: { onNavigate?: (page: Page
 
       <div className="p-4 flex flex-col gap-6">
         {/* Image Upload Component */}
-        <label className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl h-32 flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
+        <label className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl aspect-square flex flex-col items-center justify-center text-gray-400 gap-2 cursor-pointer hover:bg-gray-100 transition-colors overflow-hidden">
           {imagePreview ? (
             <img src={imagePreview} alt="상품 사진" className="w-full h-full object-cover rounded-xl" />
           ) : (
