@@ -120,15 +120,17 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
         pos => {
           const { latitude: lat, longitude: lng } = pos.coords;
           init(lat, lng);
-          (window as any).kakao.maps.load(() => {
-            const geocoder = new (window as any).kakao.maps.services.Geocoder();
-            geocoder.coord2RegionCode(lng, lat, (result: any, status: any) => {
-              if (status === (window as any).kakao.maps.services.Status.OK) {
-                const dong = result.find((r: any) => r.region_type === 'H');
-                if (dong) setLocationName(`${dong.region_1depth_name} ${dong.region_2depth_name} ${dong.region_3depth_name}`);
-              }
+          if ((window as any)?.kakao?.maps?.load) {
+            (window as any).kakao.maps.load(() => {
+              const geocoder = new (window as any).kakao.maps.services.Geocoder();
+              geocoder.coord2RegionCode(lng, lat, (result: any, status: any) => {
+                if (status === (window as any).kakao.maps.services.Status.OK) {
+                  const dong = result.find((r: any) => r.region_type === 'H');
+                  if (dong) setLocationName(`${dong.region_1depth_name} ${dong.region_2depth_name} ${dong.region_3depth_name}`);
+                }
+              });
             });
-          });
+          }
         },
         err => { console.warn("Geolocation API Error:", err); init(37.556, 126.903); }
       );

@@ -56,6 +56,10 @@ export function MapPage({
 
   useEffect(() => {
     const buildMap = (userLat: number, userLng: number, products: ProductWithCoords[]) => {
+      if (!window?.kakao?.maps?.load) {
+        setIsLocating(false);
+        return;
+      }
       window.kakao.maps.load(() => {
         if (!mapRef.current) return;
 

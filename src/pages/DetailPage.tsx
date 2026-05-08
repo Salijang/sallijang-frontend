@@ -106,6 +106,7 @@ export function DetailPage({ productId, onBack, onReserve, onAddToCart, now, isP
 
   useEffect(() => {
     if (!product || !mapContainerRef.current) return;
+    if (!(window as any)?.kakao?.maps?.load) return;
 
     const initMap = (lat: number, lng: number) => {
       setStoreCoords({ lat, lng });
