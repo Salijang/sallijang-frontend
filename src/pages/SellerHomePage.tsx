@@ -26,7 +26,7 @@ function formatReviewDate(isoString: string) {
 }
 
 export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isPcVersion?: boolean; userName?: string; userId?: number | null; storeId?: number | null }) {
-  const [noticeExpanded, setNoticeExpanded] = useState(true);
+  const [noticeExpanded, setNoticeExpanded] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [stats, setStats] = useState<SalesStats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -160,23 +160,27 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
             <span className="text-gray-500 font-bold text-[13px] flex items-center gap-1 pr-1">{noticeExpanded ? '접기' : '전체보기'} <span className={`transition-transform duration-300 inline-block font-normal text-[10px] ${noticeExpanded ? 'rotate-180' : ''}`}>▼</span></span>
           </div>
           
-          {noticeExpanded && (
-            <div className="flex flex-col gap-4 px-1">
-              {notices.map((notice, i) => (
-                <div key={i} className={`flex flex-col gap-1 ${i > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
-                  <div className="flex items-start gap-1.5 group">
-                    <span className="text-[#FFE400] font-black mt-1 text-[22px] leading-[10px]">·</span>
-                    <p className="text-gray-700 font-bold text-[14.5px] leading-snug tracking-tight group-hover:text-black transition-colors">
-                      {notice.title}
-                    </p>
-                  </div>
-                  <span className="text-gray-400 text-[12px] font-bold mt-1 ml-3.5">
-                    {notice.date}
-                  </span>
+          <div className="flex flex-col gap-4 px-1">
+            {notices.map((notice, i) => (
+              <div key={i} className={`flex flex-col gap-1 ${i > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
+                <div className="flex items-start gap-1.5 group">
+                  <span className="text-[#FFE400] font-black mt-1 text-[22px] leading-[10px]">·</span>
+                  <p className="text-gray-700 font-bold text-[14.5px] leading-snug tracking-tight group-hover:text-black transition-colors">
+                    {notice.title}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className="text-gray-400 text-[12px] font-bold mt-1 ml-3.5 flex justify-between items-center">
+                  {notice.date}
+                  {noticeExpanded && <span className="text-gray-300 font-normal">자세히 보기 ❯</span>}
+                </span>
+                {noticeExpanded && (
+                  <p className="ml-3.5 mt-2 text-[13px] text-gray-500 leading-relaxed bg-white p-3 rounded-xl border border-gray-50">
+                    {notice.content}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="h-px bg-gray-200/60 w-full mt-5 mb-1"></div>
