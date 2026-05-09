@@ -9,10 +9,27 @@ interface SalesStats {
   yesterday_count: number;
 }
 
+interface Review {
+  id: number;
+  rating: number;
+  content: string;
+  created_at: string;
+}
+
+function formatReviewDate(isoString: string) {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffD = Math.floor((now.getTime() - date.getTime()) / 86400000);
+  if (diffD === 0) return '오늘';
+  if (diffD === 1) return '어제';
+  return `${diffD}일 전`;
+}
+
 export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isPcVersion?: boolean; userName?: string; userId?: number | null; storeId?: number | null }) {
-  const [noticeExpanded, setNoticeExpanded] = useState(false);
+  const [noticeExpanded, setNoticeExpanded] = useState(true);
   const [showNotif, setShowNotif] = useState(false);
   const [stats, setStats] = useState<SalesStats | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const { unreadCount } = useNotifications(userId ?? null);
 
   useEffect(() => {
@@ -20,6 +37,14 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
     authFetch(`https://api.sallijang.shop/api/v1/orders/stats?store_id=${storeId}`)
       .then(res => res.json())
       .then(data => setStats(data))
+      .catch(console.error);
+  }, [storeId]);
+
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`https://api.sallijang.shop/api/v1/reviews/?store_id=${storeId}`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setReviews(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, [storeId]);
 
@@ -32,16 +57,11 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
   return (
     <div className="flex flex-col min-h-full bg-gray-50 relative pb-20">
       <header className="bg-gray-50 p-4 flex justify-between items-center sticky top-0 z-20 shrink-0 min-h-[64px]">
-        {!isPcVersion && (
-          <button className="text-2xl text-gray-800 focus:outline-none flex items-center justify-center p-1 relative -left-1">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="miter"><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
-          </button>
-        )}
         <div className={`flex items-center gap-1 font-black text-xl tracking-tight text-gray-900 absolute left-1/2 -translate-x-1/2 ${isPcVersion ? 'static translate-x-0 mx-auto' : ''}`}>
-          살리장셀프서비스 <span className="text-[22px] ml-0.5">🥜</span>
+          판매자 셀프서비스
         </div>
         {!isPcVersion && (
-          <div className="relative cursor-pointer" onClick={() => setShowNotif(true)}>
+          <div className="relative cursor-pointer ml-auto" onClick={() => setShowNotif(true)}>
             <span className="text-xl">🔔</span>
             {unreadCount > 0 && (
               <div className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full border border-gray-50 flex items-center justify-center">
@@ -168,34 +188,35 @@ export function SellerHomePage({ isPcVersion, userName, userId, storeId }: { isP
         <div className="pb-10">
           <div className="flex items-center gap-3 mb-5 pt-2">
             <h3 className="font-extrabold text-[17px] flex items-center gap-1 text-gray-900 cursor-pointer">리뷰 <span className="text-gray-400 font-light text-[22px] ml-0.5 -mt-1">›</span></h3>
-            <div className="flex gap-2 text-[12px] font-extrabold tracking-tight">
-              <div className="bg-gray-800 text-white px-2.5 py-1 rounded-full leading-none">신규 3</div>
-              <div className="text-gray-500 flex items-center px-1">미답변 7</div>
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-1.5 px-1">
-            <div className="flex items-center gap-2">
-              <div className="flex text-[#FFC400] text-[15px] tracking-tighter">
-                ★★★★<span className="text-gray-200">★</span>
+            {reviews.length > 0 && (
+              <div className="flex gap-2 text-[12px] font-extrabold tracking-tight">
+                <div className="bg-gray-800 text-white px-2.5 py-1 rounded-full leading-none">총 {reviews.length}</div>
               </div>
-              <span className="text-gray-400 font-bold text-[13px] ml-0.5">오늘</span>
-            </div>
-            <p className="font-bold text-[15px] text-gray-800 mt-1 tracking-tight">서비스로 주신 음료 잘 먹었습니다!</p>
+            )}
           </div>
-          
-          <div className="h-px bg-gray-100/80 w-full mt-6 mb-5"></div>
 
-          <div className="flex flex-col gap-1.5 px-1 relative">
-            <div className="flex items-center gap-2">
-              <div className="flex text-[#FFC400] text-[15px] tracking-tighter">
-                ★★★★★
-              </div>
-              <span className="text-gray-400 font-bold text-[13px] ml-0.5">어제</span>
+          {reviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-1">
+              <span className="text-3xl mb-1">💬</span>
+              <span className="font-bold text-sm">아직 작성된 리뷰가 없어요</span>
             </div>
-            <p className="font-bold text-[15px] text-gray-800 mt-1 tracking-tight">고기가 너무 신선해요. 다음에 또 주문할게요!</p>
-            <div className="absolute -bottom-8 w-full h-16 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none"></div>
-          </div>
+          ) : reviews.slice(0, 2).map((review, i) => (
+            <div key={review.id}>
+              {i > 0 && <div className="h-px bg-gray-100/80 w-full mt-6 mb-5"></div>}
+              <div className={`flex flex-col gap-1.5 px-1 ${i === reviews.slice(0, 2).length - 1 ? 'relative' : ''}`}>
+                <div className="flex items-center gap-2">
+                  <div className="flex text-[#FFC400] text-[15px] tracking-tighter">
+                    {'★'.repeat(review.rating)}<span className="text-gray-200">{'★'.repeat(5 - review.rating)}</span>
+                  </div>
+                  <span className="text-gray-400 font-bold text-[13px] ml-0.5">{formatReviewDate(review.created_at)}</span>
+                </div>
+                <p className="font-bold text-[15px] text-gray-800 mt-1 tracking-tight">{review.content}</p>
+                {i === reviews.slice(0, 2).length - 1 && reviews.length > 2 && (
+                  <div className="absolute -bottom-8 w-full h-16 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none"></div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

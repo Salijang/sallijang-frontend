@@ -163,7 +163,7 @@ export function HistoryPage({ onNavigate, buyerId, storeId }: {
                 time={timeLabel}
                 id={`#${order.order_number}`}
                 imageUrl={productImages[order.items[0]?.product_id ?? -1] ?? ""}
-                onReview={cardStatus === '완료' && !reviewedOrderIds.has(order.id) ? () => setReviewingItem({
+                onReview={!isSeller && cardStatus === '완료' && !reviewedOrderIds.has(order.id) ? () => setReviewingItem({
                   name: order.items.map(i => i.product_name).join(', '),
                   shop: order.store_name,
                   quantity: order.items.reduce((s, i) => s + i.quantity, 0),
