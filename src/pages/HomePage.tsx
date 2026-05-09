@@ -115,10 +115,14 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       fetchProducts({ lat, lng, pageNum: 0, category: selectedCategoryRef.current });
     };
 
+    // GPS 기다리지 않고 즉시 상품 로드
+    init();
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
           const { latitude: lat, longitude: lng } = pos.coords;
+          // GPS 위치 기반으로 거리순 재로드
           init(lat, lng);
           if ((window as any)?.kakao?.maps?.load) {
             (window as any).kakao.maps.load(() => {
@@ -132,10 +136,9 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
             });
           }
         },
-        err => { console.warn("Geolocation API Error:", err); init(37.556, 126.903); }
+        err => { console.warn("Geolocation API Error:", err); },
+        { maximumAge: 60_000, timeout: 8_000 }
       );
-    } else {
-      init();
     }
 
     const intervalId = setInterval(() => {

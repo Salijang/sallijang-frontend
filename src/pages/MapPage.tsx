@@ -136,6 +136,9 @@ export function MapPage({
       });
     };
 
+    const DEFAULT_LAT = 37.5665;
+    const DEFAULT_LNG = 126.9780;
+
     const fetchAndBuild = (userLat: number, userLng: number) => {
       fetch(`https://api.sallijang.shop/api/v1/products/?user_lat=${userLat}&user_lng=${userLng}`)
         .then(res => res.json())
@@ -152,18 +155,36 @@ export function MapPage({
         .catch(console.error);
     };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => { setIsLocating(false); fetchAndBuild(pos.coords.latitude, pos.coords.longitude); },
-        () => {
-          setIsLocating(false);
-          fetchAndBuild(37.5665, 126.9780);
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       setIsLocating(false);
-      fetchAndBuild(37.5665, 126.9780);
+      fetchAndBuild(DEFAULT_LAT, DEFAULT_LNG);
+      return;
     }
+
+    // 500ms 내 GPS 응답(캐시 포함) 없으면 서울 기본값으로 먼저 지도 표시
+    let defaultShown = false;
+    const showDefault = () => {
+      if (defaultShown) return;
+      defaultShown = true;
+      fetchAndBuild(DEFAULT_LAT, DEFAULT_LNG);
+    };
+    const fallbackTimer = setTimeout(showDefault, 500);
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        clearTimeout(fallbackTimer);
+        setIsLocating(false);
+        fetchAndBuild(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        clearTimeout(fallbackTimer);
+        setIsLocating(false);
+        showDefault();
+      },
+      { maximumAge: 60_000, timeout: 8_000 }
+    );
+
+    return () => clearTimeout(fallbackTimer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
