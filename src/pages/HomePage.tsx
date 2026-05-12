@@ -43,10 +43,19 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
   selectedCategoryRef.current = selectedCategory;
 
   const [products, setProducts] = useState<Product[]>([]);
-  useProductStream(setProducts, () => {
-    const loc = userLocRef.current;
-    fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true, category: selectedCategoryRef.current });
-  });
+  useProductStream(
+    setProducts,
+    () => {
+      const loc = userLocRef.current;
+      fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true, category: selectedCategoryRef.current });
+    },
+    (productId: number) => {
+      fetch(`https://api.sallijang.shop/api/v1/products/${productId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(d => { if (d) setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...mapProduct(d) } : p)); })
+        .catch(() => {});
+    },
+  );
   const [locationName, setLocationName] = useState('내 위치');
   const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
   const userLocRef = useRef<{lat: number, lng: number} | null>(null);
@@ -141,12 +150,7 @@ export function HomePage({ onNavigate, onNavigateToCart, cartCount, now, isPcVer
       );
     }
 
-    const intervalId = setInterval(() => {
-      const loc = userLocRef.current;
-      fetchProducts({ lat: loc?.lat, lng: loc?.lng, pageNum: 0, silent: true, category: selectedCategoryRef.current });
-    }, 20_000);
-
-    return () => clearInterval(intervalId);
+    return () => {};
   }, [fetchProducts]);
 
   // 카테고리 변경 시 백엔드에서 재조회

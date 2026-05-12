@@ -218,6 +218,7 @@ export function usePendingOrderCount(storeId: number | null) {
 export function useProductStream(
   setProducts: React.Dispatch<React.SetStateAction<any[]>>,
   onNewProduct?: () => void,
+  onProductUpdated?: (productId: number) => void,
 ) {
   useEffect(() => {
     const es = new EventSource(
@@ -225,12 +226,20 @@ export function useProductStream(
     );
     es.onmessage = (e) => {
       try {
-        const { product_id, remaining } = JSON.parse(e.data);
+        const { product_id, remaining, action } = JSON.parse(e.data);
+        if (action === 'deleted' || remaining < 0) {
+          setProducts(prev => prev.filter(p => p.id !== product_id));
+          return;
+        }
         setProducts(prev => {
           const exists = prev.some(p => p.id === product_id);
           if (!exists) {
             onNewProduct?.();
             return prev;
+          }
+          if (action === 'updated') {
+            onProductUpdated?.(product_id);
+            return prev.map(p => p.id === product_id ? { ...p, remaining } : p);
           }
           return remaining <= 0
             ? prev.filter(p => p.id !== product_id)
@@ -239,7 +248,7 @@ export function useProductStream(
       } catch {}
     };
     return () => es.close();
-  }, [setProducts, onNewProduct]);
+  }, [setProducts, onNewProduct, onProductUpdated]);
 }
 
 // ==========================================
